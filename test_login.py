@@ -9,55 +9,54 @@ def login():
     valid_input = False
     while not valid_input:
 
-        input_is_id = input("Are you logging in with a Practitioner ID (0) or Identifier (1): ")
+        user_login = input("Enter your Practitioner ID or Identifier to login: ")
 
-        if input_is_id == "0":  # TODO: Practitioner ID -> Identifier
+        identifier_url = root_url + "Encounter?participant.identifier=" + "http://hl7.org/fhir/sid/us-npi|" + \
+                         user_login + "&_include=Encounter.participant.individual&_include=Encounter.patient"
 
-            practitioner_id = input("\nEnter you Practitioner ID: ")
-            practitioner_url = root_url + "Practitioner/" + practitioner_id
+        print("\nAttempting Identifier Login from: " + identifier_url + "\n")
+        data = requests.get(url=identifier_url).json()
 
-            print("Grabbing Identifier from: " + practitioner_url)
-            data = requests.get(url=practitioner_url).json()
+        # Assume input is an Indentifier, if this fails, fallback onto Practitioner ID
+        try:
+            print("Found " + str(data['entry'][0]['resource']['participant'][0]['individual']['reference']))
+            practitioner_url = root_url + str(data['entry'][0]['resource']['participant'][0]['individual']['reference'])
+        except KeyError:
+            print("Invalid Practitioner ID, perhaps this is an Identifier")
+            practitioner_url = root_url + "Practitioner/" + user_login
 
-            try:
-                data['identifier']
-            except KeyError:
-                print("Invalid Practitioner ID, perhaps this is an Identifier\n")
+        print("\nAttempting Practitioner ID Login from: " + practitioner_url)
+        data = requests.get(url=practitioner_url).json()
+
+        try:
+            if data['issue'][0]['severity'] == "error":
+                print("\nFailed Login!\n")
                 continue
+        except KeyError:
+            print("\nSuccess!")
 
-            for i in range(len(data['identifier'])):
+        for i in range(len(data['identifier'])):
+            system = data['identifier'][i]['system']
+            identifier_value = data['identifier'][i]['value']
 
-                system = data['identifier'][i]['system']
-                identifier_value = data['identifier'][i]['value']
-                print("\nSystem: " + system + " | Value: " + identifier_value)
-
-                encounters_url = root_url + "Encounter?participant.identifier=" + system + "|" + identifier_value + \
-                                 "&_include=Encounter.participant.individual&_include=Encounter.patient"
-                print(encounters_url)
-
-            valid_input = True
-
-            return identifier_value
-
-        if input_is_id == "1":  # TODO: Identifier | Assume using System: "http://hl7.org/fhir/sid/us-npi"
-
-            system = "http://hl7.org/fhir/sid/us-npi"
-            identifier_value = input("\nEnter you Identifier: ")
-            print("\nSystem: " + system + " | Value: " + identifier_value)
+            print("\nWelcome " + str(data['name'][0]['prefix'][0]) + " " + str(data['name'][0]['given'][0]) + " " +
+                  str(data['name'][0]['family']))
+            # print("\nSystem: " + system + " | Value: " + identifier_value)
 
             encounters_url = root_url + "Encounter?participant.identifier=" + system + "|" + identifier_value + \
                              "&_include=Encounter.participant.individual&_include=Encounter.patient"
-            print(encounters_url)
+            # print(encounters_url)
 
-            valid_input = True
+        valid_input = True
 
-            return identifier_value
+    return identifier_value
 
 
 def get_all_patient_data(identifier):
-
     encounters_url = root_url + "Encounter?participant.identifier=http://hl7.org/fhir/sid/us-npi|" + identifier + \
                      "&_include=Encounter.participant.individual&_include=Encounter.patient"
+
+    print("\nPulling Patient Information")
 
     all_encouters_practitioner = requests.get(url=encounters_url).json()
     try:
@@ -69,7 +68,7 @@ def get_all_patient_data(identifier):
     all_encouter_data = all_encouters_practitioner['entry']
 
     # let's use a dataframe to store the data
-    cholesterol_data = pd.DataFrame(columns=['Patient', 'Cholestrol', 'Date'])
+    # TODO: cholesterol_data = pd.DataFrame(columns=['Patient', 'Cholestrol', 'Date'])
     patient_list = []
 
     processed_patient_id = []
@@ -107,7 +106,7 @@ def get_all_patient_data(identifier):
                 record.append(aus_date_format)
                 # this prints the cholesterol data of the patients of a particular practitioner
                 print(record)
-                cholesterol_data.append(record)
+                # TODO: cholesterol_data.append(record)
         except:
             continue
             # no data
