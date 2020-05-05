@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 
 root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'  # Root URL
+npi_url = "http://hl7.org/fhir/sid/us-npi"
 
 
 def login():
@@ -11,13 +12,13 @@ def login():
 
         user_login = input("Enter your Practitioner ID or Identifier to login: ")
 
-        identifier_url = root_url + "Encounter?participant.identifier=" + "http://hl7.org/fhir/sid/us-npi|" + \
+        identifier_url = root_url + "Encounter?participant.identifier=" + npi_url + "|" + \
                          user_login + "&_include=Encounter.participant.individual&_include=Encounter.patient"
 
         print("\nAttempting Identifier Login from: " + identifier_url + "\n")
         data = requests.get(url=identifier_url).json()
 
-        # Assume input is an Indentifier, if this fails, fallback onto Practitioner ID
+        # Assume input is an Identifier, if this fails, fallback onto Practitioner ID
         try:
             print("Found " + str(data['entry'][0]['resource']['participant'][0]['individual']['reference']))
             practitioner_url = root_url + str(data['entry'][0]['resource']['participant'][0]['individual']['reference'])
@@ -36,24 +37,25 @@ def login():
             print("\nSuccess!")
 
         for i in range(len(data['identifier'])):
-            system = data['identifier'][i]['system']
-            identifier_value = data['identifier'][i]['value']
 
-            print("\nWelcome " + str(data['name'][0]['prefix'][0]) + " " + str(data['name'][0]['given'][0]) + " " +
-                  str(data['name'][0]['family']))
-            # print("\nSystem: " + system + " | Value: " + identifier_value)
+            if data['identifier'][i]['system'] == npi_url:
+                identifier_value = data['identifier'][i]['value']
 
-            encounters_url = root_url + "Encounter?participant.identifier=" + system + "|" + identifier_value + \
-                             "&_include=Encounter.participant.individual&_include=Encounter.patient"
-            # print(encounters_url)
+                print("\nWelcome " + str(data['name'][0]['prefix'][0]) + " " + str(data['name'][0]['given'][0]) + " " +
+                      str(data['name'][0]['family']))
+                # print("\nSystem: " + system + " | Value: " + identifier_value)
 
-        valid_input = True
+                encounters_url = root_url + "Encounter?participant.identifier=" + npi_url + "|" + identifier_value + \
+                                 "&_include=Encounter.participant.individual&_include=Encounter.patient"
+                # print(encounters_url)
+
+                valid_input = True
 
     return identifier_value
 
 
 def get_all_patient_data(identifier):
-    encounters_url = root_url + "Encounter?participant.identifier=http://hl7.org/fhir/sid/us-npi|" + identifier + \
+    encounters_url = root_url + "Encounter?participant.identifier=" + npi_url + "|" + identifier + \
                      "&_include=Encounter.participant.individual&_include=Encounter.patient"
 
     print("\nPulling Patient Information")
