@@ -35,9 +35,9 @@ def login():
                                  "&_include=Encounter.participant.individual&_include=Encounter.patient"
                 print(encounters_url)
 
-                valid_input = True
+            valid_input = True
 
-                return identifier_value
+            return identifier_value
 
         if input_is_id == "1":  # TODO: Identifier | Assume using System: "http://hl7.org/fhir/sid/us-npi"
 
@@ -72,18 +72,27 @@ def get_all_patient_data(identifier):
     cholesterol_data = pd.DataFrame(columns=['Patient', 'Cholestrol', 'Date'])
     patient_list = []
 
+    processed_patient_id = []
+
     for entry in all_encouter_data:
         item = entry['resource']
         patient = item['subject']['reference']
 
         # let's get the patient id, which we need to search for the cholesterol value
         patient_id = patient.split('/')[1]
+        if patient_id in processed_patient_id:
+            # print("Duplicate Patient_ID '" + str(patient_id + "'. Skipping"))
+            continue
+        processed_patient_id.append(patient_id)
         patient_list.append(patient)
         findCholesUrl = root_url + "Observation?patient=" + patient_id + "&code=2093-3&_sort=date&_count=13"
         patientChol = requests.get(url=findCholesUrl).json()
         try:
             cholData = patientChol['entry']
+            # print(findCholesUrl)
+            # print(cholData)
             # here we get all cholesterol values recorded for the particular patient
+            print("\n" + str(['Patient', 'Cholestrol', 'Date']))
             for entry2 in cholData:
                 record = []
                 item = entry2['resource']
@@ -91,9 +100,6 @@ def get_all_patient_data(identifier):
                 # print(item)
                 issued = item['issued'][:len('2008-10-14')]
                 date = datetime.strptime(issued, '%Y-%m-%d').date()
-
-                if (patient_id == '29163') & (cholesterol_value == 199.14):
-                    print(item)
 
                 record.append(patient_id)
                 record.append(cholesterol_value)
@@ -106,14 +112,8 @@ def get_all_patient_data(identifier):
             continue
             # no data
 
-    global failed_attempt
-    failed_attempt = False
+    return False
 
-    return
-
-
-identifier = login()
-get_all_patient_data(identifier)
 
 if __name__ == '__main__':
 
@@ -121,4 +121,4 @@ if __name__ == '__main__':
 
     while failed_attempt:
         identifier = login()
-        get_all_patient_data(identifier)
+        failed_attempt = get_all_patient_data(identifier)
