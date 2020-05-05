@@ -12,13 +12,18 @@ def login():
         input_is_id = input("Are you logging in with a Practitioner ID (0) or Identifier (1): ")
 
         if input_is_id == "0":  # TODO: Practitioner ID -> Identifier
-            valid_input = True
 
             practitioner_id = input("\nEnter you Practitioner ID: ")
             practitioner_url = root_url + "Practitioner/" + practitioner_id
 
             print("Grabbing Identifier from: " + practitioner_url)
             data = requests.get(url=practitioner_url).json()
+
+            try:
+                data['identifier']
+            except KeyError:
+                print("Invalid Practitioner ID, perhaps this is an Identifier\n")
+                continue
 
             for i in range(len(data['identifier'])):
 
@@ -30,10 +35,11 @@ def login():
                                  "&_include=Encounter.participant.individual&_include=Encounter.patient"
                 print(encounters_url)
 
+                valid_input = True
+
                 return identifier_value
 
         if input_is_id == "1":  # TODO: Identifier | Assume using System: "http://hl7.org/fhir/sid/us-npi"
-            valid_input = True
 
             system = "http://hl7.org/fhir/sid/us-npi"
             identifier_value = input("\nEnter you Identifier: ")
@@ -42,6 +48,8 @@ def login():
             encounters_url = root_url + "Encounter?participant.identifier=" + system + "|" + identifier_value + \
                              "&_include=Encounter.participant.individual&_include=Encounter.patient"
             print(encounters_url)
+
+            valid_input = True
 
             return identifier_value
 
@@ -52,6 +60,12 @@ def get_all_patient_data(identifier):
                      "&_include=Encounter.participant.individual&_include=Encounter.patient"
 
     all_encouters_practitioner = requests.get(url=encounters_url).json()
+    try:
+        all_encouters_practitioner['entry']
+    except KeyError:
+        print("Invalid Identifier, returning to login\n")
+        return
+
     all_encouter_data = all_encouters_practitioner['entry']
 
     # let's use a dataframe to store the data
@@ -92,6 +106,19 @@ def get_all_patient_data(identifier):
             continue
             # no data
 
+    global failed_attempt
+    failed_attempt = False
+
+    return
+
 
 identifier = login()
 get_all_patient_data(identifier)
+
+if __name__ == '__main__':
+
+    failed_attempt = True
+
+    while failed_attempt:
+        identifier = login()
+        get_all_patient_data(identifier)
