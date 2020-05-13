@@ -206,17 +206,23 @@ def create_info_window(window,entry):
     for patient in patient_list:
         patient_lb.insert('end', tuple(patient))
 
+    for i in range(len(patient_list)):
+        patient_lb.itemconfigure(i,{'fg':'red'})
+
     patient_lb.config(width=0, height=0)
 
     patient_lb.pack()
 
-    history_text = tk.Text(info_window)
+    history_text = tk.Text(info_window, height='6')
+    detail_text = tk.Text(info_window, height='5')
 
-    history_button = tk.Button(info_window, text='Show history', width=15,
-                   height=2, command=lambda: show_patient_history(history_text,cholesterol,patient_lb))
+    history_button = tk.Button(info_window, text='Show patient detail', width=15,
+                   height=2, command=lambda: [show_patient_history(history_text,cholesterol,patient_lb),show_patient_detail(detail_text,cholesterol,patient_lb)])
     history_button.pack()
 
+
     history_text.pack()
+    detail_text.pack()
 
 
     while logged_in:
@@ -231,12 +237,43 @@ def create_info_window(window,entry):
 def show_patient_history(history_text, encounter_list, patient_lb):
     history_text.delete('1.0',tk.END)
 
+    history_text.insert('end', "Patient history: \n")
+    history_text.insert('end', "   Patient        Cholestrol        Date    \n")
+
     patient = patient_lb.get(patient_lb.curselection())
 
     for e in encounter_list:
         if len(e) == 3:
             if e[0] == patient[0]:
-                history_text.insert('end',str(e)+"\n")
+                for item in e:
+                    history_text.insert('end', str(item)+"    ")
+                history_text.insert('end',"\n")
+
+def show_patient_detail(detail_text,cholesterol,patient_lb):
+    detail_text.delete('1.0', tk.END)
+
+    patient = patient_lb.get(patient_lb.curselection())
+
+    detail_text.insert('end', "Patient details: \n")
+
+    patient_ID = str(int(patient[0]))
+
+    patient_URL = root_url+"Patient"+"/"+patient_ID
+
+    data = requests.get(url=patient_URL).json()
+
+    patient_name = str(data['name'][0]['prefix'][0]) + str(data['name'][0]['given'][0]) +" "+ str(data['name'][0]['family'])
+
+    patient_address = str(data['address'][0]['line'][0]) + " "+ str(data['address'][0]['city']) + " " + str(data['address'][0]['state']) + " " + str(data['address'][0]['country'])
+
+    patient_gender = str(data['gender'])
+
+    patient_birthdate = str(data['birthDate'])
+
+    detail_text.insert('end','Name: ' + patient_name + "\n")
+    detail_text.insert('end', 'Gender: ' + patient_gender + "\n")
+    detail_text.insert('end', 'Birth Date: ' + patient_birthdate + "\n")
+    detail_text.insert('end', 'Address: ' + patient_address + "\n")
 
 
 def destroy_info_window(logged_in, info_window):
