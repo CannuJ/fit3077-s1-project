@@ -5,6 +5,8 @@ import tkinter as tk
 from PyQt5 import QtWidgets
 import sys
 import os
+from dateutil.parser import parse
+
 
 root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'  # Root URL
 npi_url = "http://hl7.org/fhir/sid/us-npi"
@@ -24,6 +26,22 @@ def get_screen_dimensions():
 
     return x, y
 
+def get_patient_list(encounter_list):
+    patient_list = []
+    current_patient = encounter_list[2]
+    for i in range(2,len(encounter_list)):
+        if encounter_list[i] == []:
+            patient_list.append(current_patient)
+            if i+1 > len(encounter_list):
+                break
+            elif encounter_list[i+1] != []:
+                current_patient = encounter_list[i+1]
+            else:
+                break
+        elif parse(encounter_list[i][2]) >= parse(current_patient[2]):
+            current_patient = encounter_list[i]
+
+    return patient_list
 
 def login(user_login):
 
@@ -55,7 +73,6 @@ def login(user_login):
                        str(data['name'][0]['family'])
 
     return identifier_value, fullname
-
 
 def get_all_patient_data(identifier):
     encounters_url = root_url + "Encounter?participant.identifier=" + npi_url + "|" + identifier + \
@@ -104,15 +121,13 @@ def get_all_patient_data(identifier):
 
     return cholesterol_data
 
-
-def main():
-
+def set_login_window():
     window = tk.Tk()
     window.title("Health Practitioner Database")
 
     # Draw 1/2 Screen Size @ Centered
     x, y = get_screen_dimensions()
-    window.geometry('%dx%d+%d+%d' % (x, y, x/2, y/2))
+    window.geometry('%dx%d+%d+%d' % (x, y, x / 2, y / 2))
 
     frame_entry = tk.Frame()
 
@@ -124,7 +139,8 @@ def main():
     entry = tk.Entry(master=frame_entry)
     entry.pack()
 
-    button_pressed = tk.IntVar()
+
+
 
     button = tk.Button(
         text="Login",
@@ -132,25 +148,31 @@ def main():
         height=2,
         bg="blue",
         fg="yellow",
-        command=lambda: button_pressed.set(1)
+        command=lambda: create_info_window(window,entry)
     )
 
     # button.pack(side="top")
     # button.place(bordermode="outside", height=y/9, width=x/6, x=x/2.5, y=y/2.5)
     button.place(relx=0.5, rely=0.5, anchor="center")
+    window.mainloop()
 
-    user_login = False
+def create_info_window(window,entry):
+    input = entry.get()
 
-    while user_login is False:
-        print("\nWaiting for user input...")
-        button.wait_variable(button_pressed)  # Hold until Button is pressed
-        input = entry.get()
-        if input is not "":
-            entry.delete(0, tk.END)
-            user_login, fullname = login(input)
+    window.destroy()
+
+    info_window = tk.Tk()
+
+    info_window.title("Health Practitioner Database")
+
+    # Draw 1/2 Screen Size @ Centered
+    x, y = get_screen_dimensions()
+    info_window.geometry('%dx%d+%d+%d' % (x, y, x / 2, y / 2))
+
+    user_login, fullname = login(input)
 
     welcome_message = "\nWelcome " + str(fullname) + "\n"
-    label_entry = tk.Label(master=frame_entry, text=welcome_message)
+    label_entry = tk.Label(info_window, text=welcome_message)
     label_entry.pack()
 
     cholesterol = get_all_patient_data(user_login)
@@ -158,36 +180,75 @@ def main():
     if cholesterol is False:
         main()
 
-    data_frame = tk.Frame()
-
-    for line in cholesterol:
-        cholesterol_entry = tk.Label(master=data_frame, text=line)
-        cholesterol_entry.pack()
-
-    data_frame.pack()
-
     logged_in = True
 
     button_pressed = tk.IntVar()
 
-    button = tk.Button(
+    out_button = tk.Button(
+        info_window,
         text="Logout",
         width=5,
         height=2,
         bg="blue",
         fg="yellow",
-        command=lambda: button_pressed.set(1)
+        command=lambda: [destroy_info_window(logged_in,info_window),set_login_window()]
     )
 
-    button.place(relx=0.5, rely=0.5, anchor="s")
+    out_button.pack()
+
+    lb_label = tk.Label(info_window, bg='grey', width=40, text="   Patient     Cholestrol        Date    ")
+    lb_label.pack()
+
+    patient_list = get_patient_list(cholesterol)
+
+
+    patient_lb = tk.Listbox(info_window)
+    for patient in patient_list:
+        patient_lb.insert('end', tuple(patient))
+
+    patient_lb.config(width=0, height=0)
+
+    patient_lb.pack()
+
+    history_text = tk.Text(info_window)
+
+    history_button = tk.Button(info_window, text='Show history', width=15,
+                   height=2, command=lambda: show_patient_history(history_text,cholesterol,patient_lb))
+    history_button.pack()
+
+    history_text.pack()
+
 
     while logged_in:
         print("\nWaiting for user input...")
-        button.wait_variable(button_pressed)  # Hold until Button is pressed
+        out_button.wait_variable(button_pressed)  # Hold until Button is pressed
+        history_button.wait_variable(button_pressed)
         window.destroy()
         main()
 
-    window.mainloop()
+    info_window.mainloop()
+
+def show_patient_history(history_text, encounter_list, patient_lb):
+    history_text.delete('1.0',tk.END)
+
+    patient = patient_lb.get(patient_lb.curselection())
+
+    for e in encounter_list:
+        if len(e) == 3:
+            if e[0] == patient[0]:
+                history_text.insert('end',str(e)+"\n")
+
+
+def destroy_info_window(logged_in, info_window):
+    if logged_in:
+        info_window.destroy()
+
+
+def main():
+    #Create and set the login window
+    set_login_window()
+
+
 
 
 if __name__ == "__main__":
