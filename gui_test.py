@@ -11,7 +11,7 @@ from dateutil.parser import parse
 root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'  # Root URL
 npi_url = "http://hl7.org/fhir/sid/us-npi"
 
-
+#This function getts the dimensions of the users' screen
 def get_screen_dimensions():
 
     app = QtWidgets.QApplication(sys.argv)
@@ -26,6 +26,8 @@ def get_screen_dimensions():
 
     return x, y
 
+#This function take the encounter list as input and go through every encounters in the list
+#then generate a patient list with all latest value and data for each patient
 def get_patient_list(encounter_list):
     patient_list = []
     current_patient = encounter_list[2]
@@ -43,6 +45,8 @@ def get_patient_list(encounter_list):
 
     return patient_list
 
+#This function taks the user input identification and log into the fhir api to get
+#the name and identification value associate with the login identification
 def login(user_login):
 
     identifier_url = root_url + "Encounter?participant.identifier=" + npi_url + "|" + \
@@ -74,6 +78,8 @@ def login(user_login):
 
     return identifier_value, fullname
 
+#This function takes the user identifier and rreturn an encounter list associate to the
+#user input identifier.
 def get_all_patient_data(identifier):
     encounters_url = root_url + "Encounter?participant.identifier=" + npi_url + "|" + identifier + \
                      "&_include=Encounter.participant.individual&_include=Encounter.patient"
@@ -121,6 +127,7 @@ def get_all_patient_data(identifier):
 
     return cholesterol_data
 
+#This function create the login window allow user to input the user identification
 def set_login_window():
     window = tk.Tk()
     window.title("Health Practitioner Database")
@@ -156,6 +163,8 @@ def set_login_window():
     button.place(relx=0.5, rely=0.5, anchor="center")
     window.mainloop()
 
+#This function create the information window to show data associated to the user
+#identification
 def create_info_window(window,entry):
     input = entry.get()
 
@@ -234,6 +243,8 @@ def create_info_window(window,entry):
 
     info_window.mainloop()
 
+#This function taks the encounter list, patienn list box and history text in the infomation
+#window to output the other history value for the selected patient in the list box in the text space.
 def show_patient_history(history_text, encounter_list, patient_lb):
     history_text.delete('1.0',tk.END)
 
@@ -249,6 +260,8 @@ def show_patient_history(history_text, encounter_list, patient_lb):
                     history_text.insert('end', str(item)+"    ")
                 history_text.insert('end',"\n")
 
+#This function taks the encounter list, patienn list box and history text in the infomation
+#window to output the patient details for the selected patient in the list box in the text space.
 def show_patient_detail(detail_text,cholesterol,patient_lb):
     detail_text.delete('1.0', tk.END)
 
@@ -275,18 +288,14 @@ def show_patient_detail(detail_text,cholesterol,patient_lb):
     detail_text.insert('end', 'Birth Date: ' + patient_birthdate + "\n")
     detail_text.insert('end', 'Address: ' + patient_address + "\n")
 
-
+#This function destroy the information window when user is logging out.
 def destroy_info_window(logged_in, info_window):
     if logged_in:
         info_window.destroy()
 
-
 def main():
     #Create and set the login window
     set_login_window()
-
-
-
 
 if __name__ == "__main__":
     main()
