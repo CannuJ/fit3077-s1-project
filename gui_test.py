@@ -205,14 +205,21 @@ def create_info_window(window,entry):
 
     out_button.pack()
 
-    lb_label = tk.Label(info_window, bg='grey', width=40, text="   Patient     Cholestrol        Date    ")
+    lb_label = tk.Label(info_window, bg='grey', width=40, text=" ID     Name        Surname    ")
     lb_label.pack()
 
     patient_list = get_patient_list(cholesterol)
 
-
     patient_lb = tk.Listbox(info_window)
     for patient in patient_list:
+        patient_ID = str(int(patient[0]))
+        patient_URL = root_url + "Patient" + "/" + patient_ID
+
+        data = requests.get(url=patient_URL).json()
+
+        patient_name = str(data['name'][0]['prefix'][0]) + str(data['name'][0]['given'][0]) + " " + str(
+            data['name'][0]['family'])
+        patient = [patient_ID, patient_name]
         patient_lb.insert('end', tuple(patient))
 
     for i in range(len(patient_list)):
@@ -255,7 +262,7 @@ def show_patient_history(history_text, encounter_list, patient_lb):
 
     for e in encounter_list:
         if len(e) == 3:
-            if e[0] == patient[0]:
+            if e[0].strip(" ") == patient[0]:
                 for item in e:
                     history_text.insert('end', str(item)+"    ")
                 history_text.insert('end',"\n")
