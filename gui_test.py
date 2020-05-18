@@ -159,6 +159,27 @@ def get_all_patient_data(identifier):
 
     return cholesterol_data_array
 
+def get_patient_name(ID):
+    patient_URL = root_url + "Patient" + "/" + ID
+
+    data = requests.get(url=patient_URL).json()
+
+    patient_name = str(data['name'][0]['prefix'][0]) + str(data['name'][0]['given'][0]) + " " + str(
+        data['name'][0]['family'])
+
+    return patient_name
+
+def Prompt_relogin(window):
+    relogin_text = "Invalid practitioner identification, please login again."
+    Fail_login_label = tk.Label(window, text = relogin_text)
+    Fail_login_label.pack()
+
+def login_callback(window,entry):
+    user_login, fullname = login(entry.get())
+    if user_login is False or fullname is False:
+        Prompt_relogin(window)
+    else:
+        create_info_window(window,entry)
 
 # This function create the login window allow user to input the user identification
 def set_login_window():
@@ -179,14 +200,16 @@ def set_login_window():
     entry = tk.Entry(master=frame_entry)
     entry.pack()
 
+
     button = tk.Button(
         text="Login",
         width=5,
         height=2,
         bg="blue",
         fg="yellow",
-        command=lambda: create_info_window(window, entry)
+        command=lambda: login_callback(window, entry)
     )
+
 
     # button.pack(side="top")
     # button.place(bordermode="outside", height=y/9, width=x/6, x=x/2.5, y=y/2.5)
@@ -240,21 +263,17 @@ def create_info_window(window, entry):
     lb_label = tk.Label(info_window, bg='grey', width=40, text=" ID     Name        Surname    ")
     lb_label.pack()
 
-    patient_list = get_patient_list(cholesterol)
+    patient_latest_list = get_patient_list(cholesterol)
 
     patient_lb = tk.Listbox(info_window)
-    for patient in patient_list:
+    for patient in patient_latest_list:
         patient_ID = str(int(patient[0]))
-        patient_URL = root_url + "Patient" + "/" + patient_ID
+        patient_name = get_patient_name(patient_ID)
 
-        data = requests.get(url=patient_URL).json()
-
-        patient_name = str(data['name'][0]['prefix'][0]) + str(data['name'][0]['given'][0]) + " " + str(
-            data['name'][0]['family'])
         patient = [patient_ID, patient_name]
         patient_lb.insert('end', tuple(patient))
 
-    for i in range(len(patient_list)):
+    for i in range(len(patient_latest_list)):
         patient_lb.itemconfigure(i, {'fg': 'red'})
 
     patient_lb.config(width=0, height=0)
@@ -265,7 +284,7 @@ def create_info_window(window, entry):
     detail_text = tk.Text(info_window, height='5')
 
     history_button = tk.Button(info_window, text='Show patient detail', width=15,
-                               height=2, command=lambda: [show_patient_history(history_text, cholesterol, patient_lb),
+                               height=2, command=lambda: [show_patient_history(history_text, cholesterol, patient_lb, patient_latest_list),
                                                           show_patient_detail(detail_text, cholesterol, patient_lb)])
     history_button.pack()
 
@@ -284,7 +303,7 @@ def create_info_window(window, entry):
 
 # This function taks the encounter list, patienn list box and history text in the infomation
 # window to output the other history value for the selected patient in the list box in the text space.
-def show_patient_history(history_text, encounter_list, patient_lb):
+def show_patient_history(history_text, encounter_list, patient_lb,latest_list):
     history_text.delete('1.0', tk.END)
 
     history_text.insert('end', "Patient history: \n")
@@ -292,12 +311,26 @@ def show_patient_history(history_text, encounter_list, patient_lb):
 
     patient = patient_lb.get(patient_lb.curselection())
 
+    patient_id = patient[0]
+
+    for item in latest_list:
+        if len(item) == 3:
+            if item[0].strip(" ") == patient_id:
+                latest_date = item[2].strip(" ")
+
+    index = 2
     for e in encounter_list:
         if len(e) == 3:
             if e[0].strip(" ") == patient[0]:
                 for item in e:
                     history_text.insert('end', str(item) + "    ")
                 history_text.insert('end', "\n")
+                index += 1
+            if e[2].strip(" ") == latest_date:
+                start_index = str(index)+'.0'
+                end_index = str(index)+'.100'
+                history_text.tag_add('latest',start_index,end_index)
+                history_text.tag_configure('latest', foreground='red')
 
 
 # This function taks the encounter list, patienn list box and history text in the infomation
