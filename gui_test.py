@@ -24,9 +24,11 @@ def get_screen_dimensions():
     return screen_width / 2, screen_height / 2
 
 
-def on_closing(ui):
-    if messagebox.askokcancel("Quit", "Do you want to quit?"):
-        ui.destroy()
+def get_next_url(response):
+    for link in response['link']:
+        if link['relation'] == 'next':
+            return link['url']
+    return False
 
 
 # This function take the encounter list as input and go through every encounters in the list
@@ -34,17 +36,16 @@ def on_closing(ui):
 def get_patient_list(encounter_list):
     patient_list = []
     current_patient = encounter_list[2]
-    for i in range(2, len(encounter_list)):
-        if encounter_list[i] == []:
+    for i in range(3, len(encounter_list)):
+        if encounter_list[i][0] == current_patient[0]:
+            if encounter_list[i][2] > current_patient[2]:
+                current_patient = encounter_list[i]
+        else:
             patient_list.append(current_patient)
-            if i + 1 > len(encounter_list):
-                break
-            elif encounter_list[i + 1] != []:
-                current_patient = encounter_list[i + 1]
-            else:
-                break
-        elif parse(encounter_list[i][2]) >= parse(current_patient[2]):
             current_patient = encounter_list[i]
+
+    if current_patient not in patient_list:
+        patient_list.append(current_patient)
 
     return patient_list
 
@@ -82,35 +83,33 @@ def login(user_login):
     return False, False
 
 
-def get_all_patient_data(identifier):
+def get_all_patient_data(identifier, additional_id_array):
     """
     Takes the user identifier determined from logging in,
     and returns a list of encounters associated to that identifier
     :param identifier: the identifier that references the practitioner in question
+    :param additional_id_array: if any IDs are added they will be in here
     :return: a list of encounters associated to the identifier
     """
     encounters_url = root_url + "Encounter?participant.identifier=" + npi_url + "|" + identifier + \
                      "&_include=Encounter.participant.individual&_include=Encounter.patient"
-    all_encounters_practitioner = requests.get(url=encounters_url).json()
+    encounters_response = requests.get(url=encounters_url).json()
     try:
-        all_encounter_data = all_encounters_practitioner['entry']
+        all_encounter_data = encounters_response['entry']
     except KeyError:  # Was not a valid Identifier
         return False
 
     next_url = ""  # Test
     iterator = 0
 
-    patient_list = []
-    processed_patient_id = []  # We don't want to process the same Patient
+    patient_id_list = []  # We don't want to process the same Patient
 
-    cholesterol_data_array = [['  Patient  ', '  Cholesterol  ', '    Date    ']]  # Header
-
-    while next_url is not None:
+    while next_url is not False:
 
         iterator += 1
         try:  # Large encounter bundles take a while to process, uncomment to get an idea how long to go
             parsed_entries = iterator * 50
-            total = all_encounters_practitioner['total']
+            total = encounters_response['total']  # Total is calculated dynamically
             if int(parsed_entries) < int(total):
                 print("Parsed " + str(parsed_entries) + "/" + str(total) + " entries")
             else:
@@ -120,42 +119,42 @@ def get_all_patient_data(identifier):
             print("Parsed " + str(parsed_entries) + " entries")
             pass
 
-        found_next_url = False
-        for link in all_encounters_practitioner['link']:  # Grabs url for next 50 entries
-            if link['relation'] == 'next':
-                next_url = link['url']
-                found_next_url = True
-        if found_next_url is False:
-            next_url = None
-
+        next_url = get_next_url(encounters_response)
         for entry in all_encounter_data:
             patient = entry['resource']['subject']['reference']
             patient_id = patient.split('/')[1]
-            if patient_id in processed_patient_id:  # Duplicate Patient_ID, Ignore ID
+            if patient_id in patient_id_list:  # Duplicate Patient_ID, Ignore ID
                 continue
-            cholesterol_data_array.append([])  # Acts as break between different patients
-            processed_patient_id.append(patient_id)
-            patient_list.append(patient)
-            find_cholesterol_url = root_url + "Observation?patient=" + patient_id + "&code=2093-3&_sort=date&_count=13"
-            patient_cholesterol = requests.get(url=find_cholesterol_url).json()
-            try:
-                cholesterol_data = patient_cholesterol['entry']
-                for entry2 in cholesterol_data:  # For each Cholesterol Record of Patient
-                    record = []
-                    item = entry2['resource']
-                    cholesterol_value = str(item['valueQuantity']['value'])
-                    issued = item['issued'][:len('2008-10-14')]
-                    date = datetime.strptime(issued, '%Y-%m-%d').date()
-                    aus_date_format = str(date.day) + '-' + str(date.month) + '-' + str(date.year)
-                    record.append("{:>11}".format(patient_id))
-                    record.append("{:>14}".format(cholesterol_value + " mg/L"))
-                    record.append("{:>13}".format(aus_date_format))
-                    cholesterol_data_array.append(record)  # Append all 3 Values to Array
-            except KeyError:  # No Cholesterol Data
-                continue
+            patient_id_list.append(patient_id)
+        if next_url is not False:
+            encounters_response = requests.get(url=next_url).json()  # GET with next url
 
-        if next_url is not None:
-            all_encounters_practitioner = requests.get(url=next_url).json()  # GET with next url
+    # Append additional IDs if not already present
+    for id_num in additional_id_array:
+        if str(id_num) not in patient_id_list:
+            patient_id_list.append(str(id_num))
+
+    cholesterol_data_array = [['  Patient  ', '  Cholesterol  ', '    Date    ']]  # Header
+
+    # Grab Patient Cholesterol
+    for patient_id in patient_id_list:
+        find_cholesterol_url = root_url + "Observation?patient=" + patient_id + "&code=2093-3&_sort=date&_count=13"
+        patient_cholesterol = requests.get(url=find_cholesterol_url).json()
+        try:
+            cholesterol_data = patient_cholesterol['entry']
+            for entry2 in cholesterol_data:  # For each Cholesterol Record of Patient
+                record = []
+                item = entry2['resource']
+                cholesterol_value = str(item['valueQuantity']['value'])
+                issued = item['issued'][:len('2008-10-14')]
+                date = datetime.strptime(issued, '%Y-%m-%d').date()
+                aus_date_format = str(date.day) + '-' + str(date.month) + '-' + str(date.year)
+                record.append("{:>11}".format(patient_id))
+                record.append("{:>14}".format(cholesterol_value + " mg/L"))
+                record.append("{:>13}".format(aus_date_format))
+                cholesterol_data_array.append(record)  # Append all 3 Values to Array
+        except KeyError:  # No Cholesterol Data
+            continue
 
     return cholesterol_data_array
 
@@ -173,7 +172,7 @@ def get_patient_name(ID):
 #Takes the login window and prompt user to relogin if the identification is invalid
 def Prompt_relogin(window):
     relogin_text = "Invalid practitioner identification, please login again."
-    Fail_login_label = tk.Label(window, text = relogin_text)
+    Fail_login_label = tk.Label(window, text=relogin_text)
     Fail_login_label.pack()
 
 #A call back function on the login button
@@ -182,7 +181,7 @@ def login_callback(window,entry):
     if user_login is False or fullname is False:
         Prompt_relogin(window)
     else:
-        create_info_window(window,entry)
+        create_info_window(window, entry)
 
 # This function create the login window allow user to input the user identification
 def set_login_window():
@@ -223,8 +222,17 @@ def set_login_window():
 
 # This function create the information window to show data associated to the user
 # identification
-def create_info_window(window, entry):
+def create_info_window(window, entry, prac_id=None, is_recall=False, additional_id_array=None):
+
+    if additional_id_array is None:
+        additional_id_array = []
+
     input = entry.get()
+
+    if is_recall is False:
+        prac_id = entry.get()
+    else:
+        additional_id_array.append(input)
 
     window.destroy()
 
@@ -236,13 +244,13 @@ def create_info_window(window, entry):
     x, y = get_screen_dimensions()
     info_window.geometry('%dx%d+%d+%d' % (x, y, x / 2, y / 2))
 
-    user_login, fullname = login(input)
+    user_login, fullname = login(prac_id)
 
     welcome_message = "\nWelcome " + str(fullname) + "\n"
     label_entry = tk.Label(info_window, text=welcome_message)
     label_entry.pack()
 
-    cholesterol = get_all_patient_data(user_login)
+    cholesterol = get_all_patient_data(user_login, additional_id_array)
 
     if cholesterol is False:
         main()
@@ -254,7 +262,7 @@ def create_info_window(window, entry):
     out_button = tk.Button(
         info_window,
         text="Logout",
-        width=5,
+        width=10,
         height=2,
         bg="blue",
         fg="yellow",
@@ -263,7 +271,30 @@ def create_info_window(window, entry):
 
     out_button.pack()
 
-    lb_label = tk.Label(info_window, bg='grey', width=40, text=" ID     Name        Surname    ")
+    # Add Patient
+
+    frame_entry = tk.Frame()
+    label_entry = tk.Label(master=frame_entry, text="Patient ID")
+    label_entry.pack()
+    entry = tk.Entry(master=frame_entry)
+    entry.pack()
+    frame_entry.pack()
+
+    add_button_pressed = tk.IntVar()
+
+    add_patient_button = tk.Button(
+        info_window,
+        text="Add Patient ID",
+        width=15,
+        height=2,
+        bg="green",
+        fg="yellow",
+        command=lambda: [create_info_window(info_window, entry, input, True, additional_id_array.append(entry))]
+    )
+
+    add_patient_button.pack()
+
+    lb_label = tk.Label(info_window, bg='grey', width=40, text=" ID     Name        Surname      Cholesterol")
     lb_label.pack()
 
     empty_label = tk.Label(info_window, fg='red', width=50, text="No patient information available")
@@ -272,19 +303,27 @@ def create_info_window(window, entry):
     else:
         empty_label.destroy()
 
-
     patient_latest_list = get_patient_list(cholesterol)
+
+    cholesterol_array = []
 
     patient_lb = tk.Listbox(info_window)
     for patient in patient_latest_list:
         patient_ID = str(int(patient[0]))
         patient_name = get_patient_name(patient_ID)
 
-        patient = [patient_ID, patient_name]
+        cholesterol_array.append(float(patient[1].strip("mg/L").strip(" ")))
+
+        patient = [patient_ID, patient_name, patient[1]]
         patient_lb.insert('end', tuple(patient))
 
+    cholesterol_average = sum(cholesterol_array)/len(cholesterol_array)
+
     for i in range(len(patient_latest_list)):
-        patient_lb.itemconfigure(i, {'fg': 'red'})
+        if cholesterol_array[i] > cholesterol_average:
+            patient_lb.itemconfigure(i, {'fg': 'red'})
+        else:
+            patient_lb.itemconfigure(i, {'fg': 'black'})
 
     patient_lb.config(width=0, height=0)
 
@@ -305,6 +344,7 @@ def create_info_window(window, entry):
         print("\nWaiting for user input...")
         out_button.wait_variable(button_pressed)  # Hold until Button is pressed
         history_button.wait_variable(button_pressed)
+        add_patient_button.wait_variable(add_button_pressed)
         window.destroy()
         main()
     # info_window.protocol("WM_DELETE_WINDOW", on_closing(info_window))
