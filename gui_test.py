@@ -240,22 +240,25 @@ def create_info_window(window, entry):
     lb_label = tk.Label(info_window, bg='grey', width=40, text=" ID     Name        Surname    ")
     lb_label.pack()
 
-    patient_list = get_patient_list(cholesterol)
-
     patient_lb = tk.Listbox(info_window)
-    for patient in patient_list:
-        patient_ID = str(int(patient[0]))
-        patient_URL = root_url + "Patient" + "/" + patient_ID
 
-        data = requests.get(url=patient_URL).json()
+    if len(cholesterol) > 2:
 
-        patient_name = str(data['name'][0]['prefix'][0]) + str(data['name'][0]['given'][0]) + " " + str(
-            data['name'][0]['family'])
-        patient = [patient_ID, patient_name]
-        patient_lb.insert('end', tuple(patient))
+        patient_list = get_patient_list(cholesterol)
 
-    for i in range(len(patient_list)):
-        patient_lb.itemconfigure(i, {'fg': 'red'})
+        for patient in patient_list:
+            patient_ID = str(int(patient[0]))
+            patient_URL = root_url + "Patient" + "/" + patient_ID
+
+            data = requests.get(url=patient_URL).json()
+
+            patient_name = str(data['name'][0]['prefix'][0]) + str(data['name'][0]['given'][0]) + " " + str(
+                data['name'][0]['family'])
+            patient = [patient_ID, patient_name]
+            patient_lb.insert('end', tuple(patient))
+
+        for i in range(len(patient_list)):
+            patient_lb.itemconfigure(i, {'fg': 'red'})
 
     patient_lb.config(width=0, height=0)
 
