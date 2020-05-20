@@ -159,6 +159,7 @@ def get_all_patient_data(identifier):
 
     return cholesterol_data_array
 
+#Takes the patient identification and return the name of the patient
 def get_patient_name(ID):
     patient_URL = root_url + "Patient" + "/" + ID
 
@@ -169,11 +170,13 @@ def get_patient_name(ID):
 
     return patient_name
 
+#Takes the login window and prompt user to relogin if the identification is invalid
 def Prompt_relogin(window):
     relogin_text = "Invalid practitioner identification, please login again."
     Fail_login_label = tk.Label(window, text = relogin_text)
     Fail_login_label.pack()
 
+#A call back function on the login button
 def login_callback(window,entry):
     user_login, fullname = login(entry.get())
     if user_login is False or fullname is False:
@@ -262,6 +265,13 @@ def create_info_window(window, entry):
 
     lb_label = tk.Label(info_window, bg='grey', width=40, text=" ID     Name        Surname    ")
     lb_label.pack()
+
+    empty_label = tk.Label(info_window, fg='red', width=50, text="No patient information available")
+    if len(cholesterol) == 2:
+        empty_label.pack()
+    else:
+        empty_label.destroy()
+
 
     patient_latest_list = get_patient_list(cholesterol)
 
