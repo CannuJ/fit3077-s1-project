@@ -90,7 +90,7 @@ def login(user_login):
     return False, False
 
 
-def get_all_patient_data(identifier, additional_id_array):
+def get_all_patient_data(identifier, additional_id_array, removed_id_array):
     """
     Takes the user identifier determined from logging in,
     and returns a list of encounters associated to that identifier
@@ -145,6 +145,8 @@ def get_all_patient_data(identifier, additional_id_array):
 
     # Grab Patient Cholesterol
     for patient_id in patient_id_list:
+        if patient_id in removed_id_array:
+            continue
         cholesterol_url = root_url + "Observation?patient=" + patient_id + "&code=2093-3&_sort=date&_count=13"
         patient_cholesterol = requests.get(url=cholesterol_url).json()
         try:
@@ -226,19 +228,35 @@ def set_login_window():
 
     window.mainloop()
 
+def remove_patient(info_window, entry, prac_id, additional_id_array,patient_lb,remove_id_array):
+    patient = patient_lb.get(patient_lb.curselection())
+
+    remove_id = patient[0]
+    remove_id_array.append(remove_id)
+
+    if remove_id in additional_id_array:
+        additional_id_array.remove(remove_id)
+
+    create_info_window(info_window, entry, prac_id, True, additional_id_array, remove_id_array)
 
 # This function create the information window to show data associated to the user
 # identification
-def create_info_window(window, entry, prac_id=None, is_recall=False, additional_id_array=None):
+def create_info_window(window, entry, prac_id=None, is_recall=False, additional_id_array=None, remove_id_array=None):
     if additional_id_array is None:
         additional_id_array = []
 
+    if remove_id_array is None:
+        remove_id_array = []
+
     input = entry.get()
+
 
     if is_recall is False:
         prac_id = entry.get()
     else:
         additional_id_array.append(input)
+        if input in remove_id_array:
+            remove_id_array.remove(input)
 
     window.destroy()
 
@@ -256,7 +274,7 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
     label_entry = tk.Label(info_window, text=welcome_message)
     label_entry.pack()
 
-    cholesterol = get_all_patient_data(user_login, additional_id_array)
+    cholesterol = get_all_patient_data(user_login, additional_id_array, remove_id_array)
 
     if cholesterol is False:
         main()
@@ -280,15 +298,16 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
     add_button_pressed = tk.IntVar()
 
     add_patient_button = tk.Button(info_window, text="Add Patient ID", width=15, height=2, bg="green", fg="yellow",
-                                   command=lambda: [create_info_window(info_window, entry, prac_id, True, additional_id_array)])
+                                   command=lambda: [create_info_window(info_window, entry, prac_id, True, additional_id_array, remove_id_array)])
 
     add_patient_button.pack()
+
 
     lb_label = tk.Label(info_window, bg='grey', width=40, text=" ID     Name        Surname      Cholesterol")
     lb_label.pack()
 
     empty_label = tk.Label(info_window, fg='red', width=50, text="No patient information available")
-    if len(cholesterol) == 2:
+    if len(cholesterol) == 1:
         empty_label.pack()
     else:
         empty_label.destroy()
@@ -324,8 +343,15 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
 
     history_button = tk.Button(info_window, text='Show patient detail', width=15, height=2, command=lambda: [
             show_patient_history(history_text, cholesterol, patient_lb, patient_latest_list),
-            show_patient_detail(detail_text, cholesterol, patient_lb)])
+            show_patient_detail(detail_text, patient_lb)])
     history_button.pack()
+
+    remove_button_pressed = tk.IntVar()
+
+    remove_patient_button = tk.Button(info_window, text="Remove Patient ID", width=15, height=2, bg="green", fg="yellow",
+                    command = lambda: [remove_patient(info_window, entry, prac_id, additional_id_array,patient_lb, remove_id_array)])
+
+    remove_patient_button.pack()
 
     history_text.pack()
     detail_text.pack()
@@ -335,6 +361,7 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
         out_button.wait_variable(button_pressed)  # Hold until Button is pressed
         history_button.wait_variable(button_pressed)
         add_patient_button.wait_variable(add_button_pressed)
+        remove_patient_button.wait_variable(remove_button_pressed)
         window.destroy()
         main()
     info_window.mainloop()
