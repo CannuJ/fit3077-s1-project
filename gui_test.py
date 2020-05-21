@@ -25,25 +25,32 @@ def get_screen_dimensions():
 
 
 def get_next_url(response):
+    """
+    Checks to see if there exists a next url in the response
+    :param response: The response from the fhir server
+    :return: The url of the next response, or False if non existent
+    """
     for link in response['link']:
         if link['relation'] == 'next':
             return link['url']
     return False
 
 
-# This function take the encounter list as input and go through every encounters in the list
-# then generate a patient list with all latest value and data for each patient
 def get_patient_list(encounter_list):
+    """
+    Iterates through our list of encounters, building a new list of latest recordings
+    :param encounter_list: A list of all cholesterol values of patients being watched
+    :return: A list of latest cholesterol values per patient being watched
+    """
     patient_list = []
     current_patient = encounter_list[2]
     for i in range(3, len(encounter_list)):
         if encounter_list[i][0] == current_patient[0]:
-            if encounter_list[i][2] > current_patient[2]:
+            if parse(encounter_list[i][2]) > parse(current_patient[2]):
                 current_patient = encounter_list[i]
         else:
             patient_list.append(current_patient)
             current_patient = encounter_list[i]
-
     if current_patient not in patient_list:
         patient_list.append(current_patient)
 
@@ -158,30 +165,32 @@ def get_all_patient_data(identifier, additional_id_array):
 
     return cholesterol_data_array
 
-#Takes the patient identification and return the name of the patient
+
+# Takes the patient identification and return the name of the patient
 def get_patient_name(ID):
     patient_URL = root_url + "Patient" + "/" + ID
-
     data = requests.get(url=patient_URL).json()
-
     patient_name = str(data['name'][0]['prefix'][0]) + str(data['name'][0]['given'][0]) + " " + str(
         data['name'][0]['family'])
 
     return patient_name
 
-#Takes the login window and prompt user to relogin if the identification is invalid
+
+# Takes the login window and prompt user to relogin if the identification is invalid
 def Prompt_relogin(window):
     relogin_text = "Invalid practitioner identification, please login again."
     Fail_login_label = tk.Label(window, text=relogin_text)
     Fail_login_label.pack()
 
-#A call back function on the login button
-def login_callback(window,entry):
+
+# A call back function on the login button
+def login_callback(window, entry):
     user_login, fullname = login(entry.get())
     if user_login is False or fullname is False:
         Prompt_relogin(window)
     else:
         create_info_window(window, entry)
+
 
 # This function create the login window allow user to input the user identification
 def set_login_window():
@@ -202,7 +211,6 @@ def set_login_window():
     entry = tk.Entry(master=frame_entry)
     entry.pack()
 
-
     button = tk.Button(
         text="Login",
         width=5,
@@ -211,7 +219,6 @@ def set_login_window():
         fg="yellow",
         command=lambda: login_callback(window, entry)
     )
-
 
     # button.pack(side="top")
     # button.place(bordermode="outside", height=y/9, width=x/6, x=x/2.5, y=y/2.5)
@@ -223,7 +230,6 @@ def set_login_window():
 # This function create the information window to show data associated to the user
 # identification
 def create_info_window(window, entry, prac_id=None, is_recall=False, additional_id_array=None):
-
     if additional_id_array is None:
         additional_id_array = []
 
@@ -289,7 +295,7 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
         height=2,
         bg="green",
         fg="yellow",
-        command=lambda: [create_info_window(info_window, entry, input, True, additional_id_array.append(entry))]
+        command=lambda: [create_info_window(info_window, entry, prac_id, True, additional_id_array)]
     )
 
     add_patient_button.pack()
@@ -317,7 +323,7 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
         patient = [patient_ID, patient_name, patient[1]]
         patient_lb.insert('end', tuple(patient))
 
-    cholesterol_average = sum(cholesterol_array)/len(cholesterol_array)
+    cholesterol_average = sum(cholesterol_array) / len(cholesterol_array)
 
     for i in range(len(patient_latest_list)):
         if cholesterol_array[i] > cholesterol_average:
@@ -333,8 +339,9 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
     detail_text = tk.Text(info_window, height='5')
 
     history_button = tk.Button(info_window, text='Show patient detail', width=15,
-                               height=2, command=lambda: [show_patient_history(history_text, cholesterol, patient_lb, patient_latest_list),
-                                                          show_patient_detail(detail_text, cholesterol, patient_lb)])
+                               height=2, command=lambda: [
+            show_patient_history(history_text, cholesterol, patient_lb, patient_latest_list),
+            show_patient_detail(detail_text, cholesterol, patient_lb)])
     history_button.pack()
 
     history_text.pack()
@@ -353,7 +360,7 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
 
 # This function taks the encounter list, patienn list box and history text in the infomation
 # window to output the other history value for the selected patient in the list box in the text space.
-def show_patient_history(history_text, encounter_list, patient_lb,latest_list):
+def show_patient_history(history_text, encounter_list, patient_lb, latest_list):
     history_text.delete('1.0', tk.END)
 
     history_text.insert('end', "Patient history: \n")
@@ -377,9 +384,9 @@ def show_patient_history(history_text, encounter_list, patient_lb,latest_list):
                 history_text.insert('end', "\n")
                 index += 1
             if e[2].strip(" ") == latest_date:
-                start_index = str(index)+'.0'
-                end_index = str(index)+'.100'
-                history_text.tag_add('latest',start_index,end_index)
+                start_index = str(index) + '.0'
+                end_index = str(index) + '.100'
+                history_text.tag_add('latest', start_index, end_index)
                 history_text.tag_configure('latest', foreground='red')
 
 
