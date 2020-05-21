@@ -145,8 +145,8 @@ def get_all_patient_data(identifier, additional_id_array):
 
     # Grab Patient Cholesterol
     for patient_id in patient_id_list:
-        find_cholesterol_url = root_url + "Observation?patient=" + patient_id + "&code=2093-3&_sort=date&_count=13"
-        patient_cholesterol = requests.get(url=find_cholesterol_url).json()
+        cholesterol_url = root_url + "Observation?patient=" + patient_id + "&code=2093-3&_sort=date&_count=13"
+        patient_cholesterol = requests.get(url=cholesterol_url).json()
         try:
             cholesterol_data = patient_cholesterol['entry']
             for entry2 in cholesterol_data:  # For each Cholesterol Record of Patient
@@ -156,9 +156,9 @@ def get_all_patient_data(identifier, additional_id_array):
                 issued = item['issued'][:len('2008-10-14')]
                 date = datetime.strptime(issued, '%Y-%m-%d').date()
                 aus_date_format = str(date.day) + '-' + str(date.month) + '-' + str(date.year)
-                record.append("{:>11}".format(patient_id))
-                record.append("{:>14}".format(cholesterol_value + " mg/L"))
-                record.append("{:>13}".format(aus_date_format))
+                record.append(patient_id)
+                record.append(cholesterol_value + " mg/L")
+                record.append(aus_date_format)
                 cholesterol_data_array.append(record)  # Append all 3 Values to Array
         except KeyError:  # No Cholesterol Data
             continue
@@ -166,64 +166,64 @@ def get_all_patient_data(identifier, additional_id_array):
     return cholesterol_data_array
 
 
-# Takes the patient identification and return the name of the patient
-def get_patient_name(ID):
-    patient_URL = root_url + "Patient" + "/" + ID
+def get_patient_name(patient_id):
+    """
+    Grabs patient full name with title
+    :param patient_id: The patients id within the fhir server
+    :return: A string of their "Title + First Name + Surname"
+    """
+    patient_URL = root_url + "Patient" + "/" + patient_id
     data = requests.get(url=patient_URL).json()
     patient_name = str(data['name'][0]['prefix'][0]) + str(data['name'][0]['given'][0]) + " " + str(
         data['name'][0]['family'])
-
     return patient_name
 
 
-# Takes the login window and prompt user to relogin if the identification is invalid
-def Prompt_relogin(window):
-    relogin_text = "Invalid practitioner identification, please login again."
+def failed_login(window):
+    """
+    Adds a message to login window explaining to user the login attempt failed
+    :param window: The window we display this message on
+    """
+    relogin_text = "Login attempt failed, please try again with your ID or Practitioner Identifier (NPI)."
     Fail_login_label = tk.Label(window, text=relogin_text)
     Fail_login_label.pack()
 
 
-# A call back function on the login button
 def login_callback(window, entry):
+    """
+    Checks whether login is valid before proceeding to info_window
+    :param window: the login window screen
+    :param entry: the user entered id or identifier
+    """
     user_login, fullname = login(entry.get())
     if user_login is False or fullname is False:
-        Prompt_relogin(window)
+        failed_login(window)
     else:
         create_info_window(window, entry)
 
 
-# This function create the login window allow user to input the user identification
 def set_login_window():
+    """
+    First window, shows text box for user to enter practitioner id or npi identifier
+    :return:
+    """
     window = tk.Tk()
     window.title("Health Practitioner Database")
 
-    # Draw 1/2 Screen Size @ Centered
     x, y = get_screen_dimensions()
-    window.geometry('%dx%d+%d+%d' % (x, y, x / 2, y / 2))
+    window.geometry('%dx%d+%d+%d' % (x, y, x / 2, y / 2))  # Draw 1/2 Screen Size @ Centered
 
     frame_entry = tk.Frame()
-
     label_entry = tk.Label(master=frame_entry, text="Practitioner ID / Identifier")
     label_entry.pack()
-
-    frame_entry.pack()
-
     entry = tk.Entry(master=frame_entry)
     entry.pack()
+    frame_entry.pack()
 
-    button = tk.Button(
-        text="Login",
-        width=5,
-        height=2,
-        bg="blue",
-        fg="yellow",
-        command=lambda: login_callback(window, entry)
-    )
-
-    # button.pack(side="top")
-    # button.place(bordermode="outside", height=y/9, width=x/6, x=x/2.5, y=y/2.5)
+    button = tk.Button(text="Login", width=5, height=2, bg="blue", fg="yellow",
+                       command=lambda: login_callback(window, entry))
     button.place(relx=0.5, rely=0.5, anchor="center")
-    # window.protocol("WM_DELETE_WINDOW", on_closing(window))
+
     window.mainloop()
 
 
@@ -265,20 +265,11 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
 
     button_pressed = tk.IntVar()
 
-    out_button = tk.Button(
-        info_window,
-        text="Logout",
-        width=10,
-        height=2,
-        bg="blue",
-        fg="yellow",
-        command=lambda: [destroy_info_window(logged_in, info_window), set_login_window()]
-    )
-
+    out_button = tk.Button(info_window, text="Logout", width=10, height=2, bg="blue", fg="yellow",
+                           command=lambda: [destroy_info_window(logged_in, info_window), set_login_window()])
     out_button.pack()
 
-    # Add Patient
-
+    # Add Patient Feature
     frame_entry = tk.Frame()
     label_entry = tk.Label(master=frame_entry, text="Patient ID")
     label_entry.pack()
@@ -288,15 +279,8 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
 
     add_button_pressed = tk.IntVar()
 
-    add_patient_button = tk.Button(
-        info_window,
-        text="Add Patient ID",
-        width=15,
-        height=2,
-        bg="green",
-        fg="yellow",
-        command=lambda: [create_info_window(info_window, entry, prac_id, True, additional_id_array)]
-    )
+    add_patient_button = tk.Button(info_window, text="Add Patient ID", width=15, height=2, bg="green", fg="yellow",
+                                   command=lambda: [create_info_window(info_window, entry, prac_id, True, additional_id_array)])
 
     add_patient_button.pack()
 
@@ -338,8 +322,7 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
     history_text = tk.Text(info_window, height='6')
     detail_text = tk.Text(info_window, height='5')
 
-    history_button = tk.Button(info_window, text='Show patient detail', width=15,
-                               height=2, command=lambda: [
+    history_button = tk.Button(info_window, text='Show patient detail', width=15, height=2, command=lambda: [
             show_patient_history(history_text, cholesterol, patient_lb, patient_latest_list),
             show_patient_detail(detail_text, cholesterol, patient_lb)])
     history_button.pack()
@@ -354,13 +337,19 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
         add_patient_button.wait_variable(add_button_pressed)
         window.destroy()
         main()
-    # info_window.protocol("WM_DELETE_WINDOW", on_closing(info_window))
     info_window.mainloop()
 
 
-# This function taks the encounter list, patienn list box and history text in the infomation
-# window to output the other history value for the selected patient in the list box in the text space.
 def show_patient_history(history_text, encounter_list, patient_lb, latest_list):
+    """
+    This function takes the encounter list, patient list box and history text in the information
+    window to output the other history value for the selected patient in the list box in the text space.
+    :param history_text:
+    :param encounter_list:
+    :param patient_lb:
+    :param latest_list:
+    :return: Outputs patient history of all cholesterol values recorded
+    """
     history_text.delete('1.0', tk.END)
 
     history_text.insert('end', "Patient history: \n")
@@ -390,9 +379,14 @@ def show_patient_history(history_text, encounter_list, patient_lb, latest_list):
                 history_text.tag_configure('latest', foreground='red')
 
 
-# This function taks the encounter list, patienn list box and history text in the infomation
-# window to output the patient details for the selected patient in the list box in the text space.
-def show_patient_detail(detail_text, cholesterol, patient_lb):
+def show_patient_detail(detail_text, patient_lb):
+    """
+    This function take the patient list box and detail text in the information window to output
+    the patient details for the selected patient in the list box in the text space.
+    :param detail_text:
+    :param patient_lb:
+    :return:
+    """
     detail_text.delete('1.0', tk.END)
 
     patient = patient_lb.get(patient_lb.curselection())
