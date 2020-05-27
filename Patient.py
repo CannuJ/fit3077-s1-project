@@ -40,7 +40,10 @@ class Patient:
         patient_data = requests.get(url=self.url_base()).json()
 
         # Personal Details
-        self.prefix = str(patient_data['name'][0]['prefix'][0])
+        try:
+            self.prefix = str(patient_data['name'][0]['prefix'][0])
+        except KeyError:
+            self.prefix = None
         self.given_name = str(patient_data['name'][0]['given'][0])
         self.family_name = str(patient_data['name'][0]['family'])
 
@@ -52,6 +55,8 @@ class Patient:
 
     # Fullname
     def fullname(self):
+        if not self.prefix:
+            return self.given_name + " " + self.family_name
         return self.prefix + " " + self.given_name + " " + self.family_name
 
     # Cholesterol and Blood
@@ -128,12 +133,14 @@ def get_next_url(response):
     return False
 
 
-testPatient = Patient(29163)
+if __name__ == '__main__':
 
-print(testPatient.fullname())
-print(testPatient.url_base())
-print(testPatient.url_cholesterol())
-print(testPatient.url_blood())
+    testPatient = Patient(29163)
 
-print(testPatient.cholesterol_latest())
-print(testPatient.blood_latest())
+    print(testPatient.fullname())
+    print(testPatient.url_base())
+    print(testPatient.url_cholesterol())
+    print(testPatient.url_blood())
+
+    print(testPatient.cholesterol_latest())
+    print(testPatient.blood_latest())

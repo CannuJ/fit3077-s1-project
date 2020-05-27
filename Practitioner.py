@@ -1,4 +1,5 @@
 import requests
+from Patient import Patient
 
 root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'  # Root URL
 npi_url = "http://hl7.org/fhir/sid/us-npi"
@@ -20,13 +21,16 @@ class Practitioner:
         self.practitioner_id = None
         self.npi_id = None
 
-        self.patient_array = []
+        self.patient_id_array = []
+
+        self.patient_data = {}
 
         self.attempt_login()
 
         if self.login_type is not None:
             self.get_personal_details()  # TODO: Potential to run Asynchronously
             self.get_patient_list()  # TODO: Potential to run Asynchronously
+            self.parse_patients()  # TODO: Potential to run Asynchronously
 
     # URLs and Handling
 
@@ -69,6 +73,12 @@ class Practitioner:
                 for i in range(len(data['identifier'])):
                     if data['identifier'][i]['system'] == npi_url:
                         self.npi_id = data['identifier'][i]['value']
+
+    def is_logged_in(self):
+        if not self.login_type:
+            return False
+        else:
+            return True
 
     # Fullname
     def fullname(self):
@@ -116,13 +126,19 @@ class Practitioner:
                 print("Parsed " + str(parsed_entries) + " entries")
                 pass
 
-
             for entry in all_encounter_data:
                 patient = entry['resource']['subject']['reference']
                 patient_id = patient.split('/')[1]
-                if patient_id in self.patient_array:  # Duplicate Patient_ID, Ignore ID
+                if patient_id in self.patient_id_array:  # Duplicate Patient_ID, Ignore ID
                     continue
-                self.patient_array.append(patient_id)
+                self.patient_id_array.append(patient_id)
+
+    def parse_patients(self):
+        for patient_id in self.patient_id_array:
+            self.patient_data[patient_id] = Patient(patient_id)
+            print("\n" + self.patient_data[patient_id].fullname())
+            print(str(self.patient_data[patient_id].cholesterol_latest()) + " | " +
+                  str(self.patient_data[patient_id].blood_latest()))
 
 
 def get_next_url(response):
@@ -137,12 +153,15 @@ def get_next_url(response):
     return False
 
 
+if __name__ == '__main__':
+    testPractitioner = Practitioner(850)
 
-testPractitioner = Practitioner(850)
+    print("\n")
+    print(testPractitioner.url_practitioner_id())
+    print(testPractitioner.url_npi_id())
 
-print(testPractitioner.fullname())
+    print("Is Logged in: " + str(testPractitioner.is_logged_in()))
+    print(testPractitioner.fullname())
 
-print(testPractitioner.url_practitioner_id())
-print(testPractitioner.url_npi_id())
 
-print(testPractitioner.patient_array)
+
