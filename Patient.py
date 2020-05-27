@@ -4,30 +4,22 @@ from datetime import datetime
 
 class Patient:
     def __init__(self, id_num):
-        # Patient ID
         self.id = str(id_num)
 
-        patient_data = requests.get(url=self.url_base()).json()
+        self.prefix = ""
+        self.given_name = ""
+        self.family_name = ""
+        self.gender = ""
+        self.birth_date = ""
+        self.address = ""
 
-        # Personal Details
-        self.prefix = str(patient_data['name'][0]['prefix'][0])
-        self.given_name = str(patient_data['name'][0]['given'][0])
-        self.family_name = str(patient_data['name'][0]['family'])
-
-        self.gender = str(patient_data['gender'])
-        self.birth_date = str(patient_data['birthDate'])
-        self.address = str(patient_data['address'][0]['line'][0]) + " " + str(patient_data['address'][0]['city']) \
-                       + " " + str(patient_data['address'][0]['state']) + " " \
-                       + str(patient_data['address'][0]['country'])
+        self.get_personal_details()  # TODO: Potential to run Asynchronously
 
         self.cholesterol_array = []
-        self.get_cholesterol()
+        self.get_cholesterol()  # TODO: Potential to run Asynchronously
 
         self.blood_array = {"Diastolic Blood Pressure": [], "Systolic Blood Pressure": []}
-        self.get_blood()
-
-    def fullname(self):
-        return self.prefix + " " + self.given_name + " " + self.family_name
+        self.get_blood()  # TODO: Potential to run Asynchronously
 
     # URLs and Handling
 
@@ -42,6 +34,27 @@ class Patient:
         return "https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/Observation?patient=" + self.id + \
                "&code=55284-4&_sort=date"
 
+    # Personal Details
+
+    def get_personal_details(self):
+        patient_data = requests.get(url=self.url_base()).json()
+
+        # Personal Details
+        self.prefix = str(patient_data['name'][0]['prefix'][0])
+        self.given_name = str(patient_data['name'][0]['given'][0])
+        self.family_name = str(patient_data['name'][0]['family'])
+
+        self.gender = str(patient_data['gender'])
+        self.birth_date = str(patient_data['birthDate'])
+        self.address = str(patient_data['address'][0]['line'][0]) + " " + str(patient_data['address'][0]['city']) \
+                       + " " + str(patient_data['address'][0]['state']) + " " \
+                       + str(patient_data['address'][0]['country'])
+
+    # Fullname
+    def fullname(self):
+        return self.prefix + " " + self.given_name + " " + self.family_name
+
+    # Cholesterol and Blood
     def get_cholesterol(self):
 
         next_url = self.url_cholesterol()
@@ -54,7 +67,7 @@ class Patient:
                     item = entry['resource']
                     cholesterol_value = str(item['valueQuantity']['value'])
                     cholesterol_units = str(item['valueQuantity']['unit'])
-                    issued = item['issued'][:len('2008-10-14')]
+                    issued = item['issued'][:len('2000-01-01')]
                     date = datetime.strptime(issued, '%Y-%m-%d').date()
                     record = [date, cholesterol_value, cholesterol_units]
                     self.cholesterol_array.append(record)
@@ -75,15 +88,13 @@ class Patient:
             try:
                 blood_data = blood_data['entry']
                 for entry in blood_data:
-                    issued = entry['resource']['issued'][:len('2008-10-14')]
-                    date = datetime.strptime(issued, '%Y-%m-%d').date()
-
                     entry2 = entry['resource']['component']
                     for item in entry2:
                         blood_value = str(item['valueQuantity']['value'])
                         blood_units = str(item['valueQuantity']['unit'])
                         blood_type = str(item['code']['coding'][0]['display'])
-
+                        issued = entry['resource']['issued'][:len('2000-01-01')]
+                        date = datetime.strptime(issued, '%Y-%m-%d').date()
                         record = [date, blood_value, blood_units, blood_type]
                         self.blood_array[blood_type].append(record)
             except KeyError:  # No Blood Data
