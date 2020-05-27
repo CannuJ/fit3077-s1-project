@@ -137,8 +137,8 @@ class Practitioner:
         for patient_id in self.patient_id_array:
             self.patient_data[patient_id] = Patient(patient_id)
             print("\n" + self.patient_data[patient_id].fullname())
-            print(str(self.patient_data[patient_id].cholesterol_latest()) + " | " +
-                  str(self.patient_data[patient_id].blood_latest()))
+            print(str(self.patient_data[patient_id].cholesterol_latest()))
+            print(str(self.patient_data[patient_id].blood_latest()))
 
 
 def get_next_url(response):
