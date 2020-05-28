@@ -21,7 +21,8 @@ class Practitioner:
         self.practitioner_id = None
         self.npi_id = None
 
-        self.patient_id_array = []
+        self.patient_base_id_array = []
+        self.patient_parsed_id_array = []
         self.patient_monitor_id_array = []
 
         self.patient_data = {}
@@ -130,14 +131,15 @@ class Practitioner:
             for entry in all_encounter_data:
                 patient = entry['resource']['subject']['reference']
                 patient_id = patient.split('/')[1]
-                if patient_id in self.patient_id_array:  # Duplicate Patient_ID, Ignore ID
+                if patient_id in self.patient_base_id_array:  # Duplicate Patient_ID, Ignore ID
                     continue
-                self.patient_id_array.append(patient_id)
+                self.patient_base_id_array.append(patient_id)
 
     def parse_patient_list(self):
-        for patient_id in self.patient_id_array:
+        for patient_id in self.patient_base_id_array:
 
             self.patient_data[patient_id] = Patient(patient_id)
+            self.patient_parsed_id_array.append(patient_id)
 
             if not self.patient_data[patient_id].has_cholesterol() and not self.patient_data[patient_id].has_blood():
                 print("Patient ID: " + str(patient_id) + " processed from Practitioner Encounters (NO DATA)")
@@ -146,31 +148,55 @@ class Practitioner:
             self.patient_monitor_id_array.append(patient_id)
             print("Patient ID: " + str(patient_id) + " processed from Practitioner Encounters (WITH DATA)")
 
-    def add_patient(self, new_patient_id):
-        if new_patient_id in self.patient_id_array or new_patient_id in self.patient_monitor_id_array:
-            print("Patient already being monitored or no data exists for Patient")
+    def add_patient(self, patient_id):
+        patient_id = str(patient_id)  # Testing through code assumes ID is int
+        if patient_id in self.patient_parsed_id_array:
+            if self.patient_data[patient_id].has_cholesterol() or self.patient_data[patient_id].has_blood():
+                if patient_id not in self.patient_monitor_id_array:
+                    self.patient_monitor_id_array.append(patient_id)
+                    print("Patient ID: " + str(patient_id) + " already processed, added to Monitor List")
+                    return
+                else:
+                    print("Patient ID: " + str(patient_id) + " already being monitored")
+                    return
+            else:
+                print("Patient ID: " + str(patient_id) + " already being monitored or no data exists for Patient")
+                return
+
+        self.patient_data[patient_id] = Patient(patient_id)
+        if not self.patient_data[patient_id].valid:
+            print("Patient ID: " + str(patient_id) + " is an invalid ID")
+            del self.patient_data[patient_id]
             return
 
-        self.patient_data[new_patient_id] = Patient(new_patient_id)
+        self.patient_parsed_id_array.append(patient_id)
 
-        if not self.patient_data[new_patient_id].has_cholesterol() and not self.patient_data[new_patient_id].has_blood():
-            print("Patient ID: " + str(new_patient_id) + " ADDED by Practitioner Request (NO DATA)")
+        if not self.patient_data[patient_id].has_cholesterol() and not self.patient_data[patient_id].has_blood():
+            print("Patient ID: " + str(patient_id) + " ADDED by Practitioner Request (NO DATA)")
             return
 
-        self.patient_monitor_id_array.append(new_patient_id)
-        print("Patient ID: " + str(new_patient_id) + " ADDED by Practitioner Request (WITH DATA)")
+        self.patient_monitor_id_array.append(patient_id)
+        print("Patient ID: " + str(patient_id) + " ADDED by Practitioner Request (WITH DATA)")
+
+    def remove_patient(self, patient_id):
+        patient_id = str(patient_id)  # Testing through code assumes ID is int
+        if patient_id not in self.patient_monitor_id_array:
+            print("Patient ID: " + str(patient_id) + " not currently being monitored")
+            return
+
+        self.patient_monitor_id_array.remove(patient_id)
+        print("Patient ID: " + str(patient_id) + " REMOVED by Practitioner Request")
 
     def display_patients(self):
 
         print("\nDisplaying all Patients being monitored WITH DATA:")
 
         for patient_id in self.patient_monitor_id_array:
-            print("\n" + self.patient_data[patient_id].fullname())
+            print("\n" + self.patient_data[patient_id].id + " | " + self.patient_data[patient_id].fullname())
             if self.patient_data[patient_id].has_cholesterol():
                 print(str(self.patient_data[patient_id].cholesterol_latest()))
             if self.patient_data[patient_id].has_blood():
                 print(str(self.patient_data[patient_id].blood_latest()))
-
 
 
 def get_next_url(response):
@@ -196,6 +222,20 @@ if __name__ == '__main__':
 
     testPractitioner.add_patient(29163)
     testPractitioner.add_patient(3912781)
+    testPractitioner.add_patient(2)
+
+    testPractitioner.display_patients()
+
+    print("")
+    testPractitioner.remove_patient(1807650)  # Parsed WITH DATA
+    testPractitioner.remove_patient(29163)  # Added WITH DATA
+    testPractitioner.remove_patient(4431584)  # Parsed but NO DATA
+
+    testPractitioner.display_patients()
+
+    print("")
+    testPractitioner.add_patient(29163)  # Parsed but REMOVED
+    testPractitioner.add_patient(29163)  # Duplicate
 
     testPractitioner.display_patients()
 

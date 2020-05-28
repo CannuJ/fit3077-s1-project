@@ -5,6 +5,7 @@ from datetime import datetime
 class Patient:
     def __init__(self, id_num):
         self.id = str(id_num)
+        self.valid = False
 
         self.prefix = ""
         self.given_name = ""
@@ -13,13 +14,16 @@ class Patient:
         self.birth_date = ""
         self.address = ""
 
-        self.get_personal_details()  # TODO: Potential to run Asynchronously
+        if self.valid_id():
+            self.valid = True
 
-        self.cholesterol_array = []
-        self.get_cholesterol()  # TODO: Potential to run Asynchronously
+            self.get_personal_details()  # TODO: Potential to run Asynchronously
 
-        self.blood_array = {"Diastolic Blood Pressure": [], "Systolic Blood Pressure": []}
-        self.get_blood()  # TODO: Potential to run Asynchronously
+            self.cholesterol_array = []
+            self.get_cholesterol()  # TODO: Potential to run Asynchronously
+
+            self.blood_array = {"Diastolic Blood Pressure": [], "Systolic Blood Pressure": []}
+            self.get_blood()  # TODO: Potential to run Asynchronously
 
     # URLs and Handling
 
