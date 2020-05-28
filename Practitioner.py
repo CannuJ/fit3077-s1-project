@@ -147,7 +147,7 @@ class Practitioner:
             print("Patient ID: " + str(patient_id) + " processed from Practitioner Encounters (WITH DATA)")
 
     def add_patient(self, new_patient_id):
-        if new_patient_id in self.patient_id_array:
+        if new_patient_id in self.patient_id_array or new_patient_id in self.patient_monitor_id_array:
             print("Patient already being monitored or no data exists for Patient")
             return
 
