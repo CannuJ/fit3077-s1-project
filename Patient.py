@@ -34,6 +34,14 @@ class Patient:
         return "https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/Observation?patient=" + self.id + \
                "&code=55284-4&_sort=date"
 
+    def valid_id(self):
+        patient_data = requests.get(url=self.url_base()).json()
+        try:
+            if patient_data['issue'][0]['severity'] == "error" and patient_data['issue'][0]['code'] == "processing":
+                return False
+        except KeyError:  # If either of these is not "error" and "processing" ASSUME is valid_id
+            return True
+
     # Personal Details
 
     def get_personal_details(self):
@@ -80,9 +88,14 @@ class Patient:
                 continue
 
     def cholesterol_latest(self):
-        if not self.cholesterol_array:
+        if not self.has_cholesterol():
             return None
         return max(self.cholesterol_array)
+
+    def has_cholesterol(self):
+        if not self.cholesterol_array:
+            return False
+        return True
 
     def get_blood(self):
 
@@ -106,9 +119,14 @@ class Patient:
                 continue
 
     def blood_latest(self):
-        if not self.blood_array:
+        if not self.has_blood():
             return None
         return [self.diastolic_latest(), self.systolic_latest()]
+
+    def has_blood(self):
+        if not self.blood_array["Diastolic Blood Pressure"] and not self.blood_array["Systolic Blood Pressure"]:
+            return False
+        return True
 
     def diastolic_latest(self):
         if not self.blood_array["Diastolic Blood Pressure"]:
@@ -134,7 +152,6 @@ def get_next_url(response):
 
 
 if __name__ == '__main__':
-
     testPatient = Patient(29163)
 
     print(testPatient.fullname())

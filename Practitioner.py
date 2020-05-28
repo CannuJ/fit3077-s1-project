@@ -22,6 +22,7 @@ class Practitioner:
         self.npi_id = None
 
         self.patient_id_array = []
+        self.patient_monitor_id_array = []
 
         self.patient_data = {}
 
@@ -30,7 +31,7 @@ class Practitioner:
         if self.login_type is not None:
             self.get_personal_details()  # TODO: Potential to run Asynchronously
             self.get_patient_list()  # TODO: Potential to run Asynchronously
-            self.parse_patients()  # TODO: Potential to run Asynchronously
+            self.parse_patient_list()  # TODO: Potential to run Asynchronously
 
     # URLs and Handling
 
@@ -133,12 +134,43 @@ class Practitioner:
                     continue
                 self.patient_id_array.append(patient_id)
 
-    def parse_patients(self):
+    def parse_patient_list(self):
         for patient_id in self.patient_id_array:
+
             self.patient_data[patient_id] = Patient(patient_id)
+
+            if not self.patient_data[patient_id].has_cholesterol() and not self.patient_data[patient_id].has_blood():
+                print("Patient ID: " + str(patient_id) + " processed from Practitioner Encounters (NO DATA)")
+                continue
+
+            self.patient_monitor_id_array.append(patient_id)
+            print("Patient ID: " + str(patient_id) + " processed from Practitioner Encounters (WITH DATA)")
+
+    def add_patient(self, new_patient_id):
+        if new_patient_id in self.patient_id_array:
+            print("Patient already being monitored or no data exists for Patient")
+            return
+
+        self.patient_data[new_patient_id] = Patient(new_patient_id)
+
+        if not self.patient_data[new_patient_id].has_cholesterol() and not self.patient_data[new_patient_id].has_blood():
+            print("Patient ID: " + str(new_patient_id) + " ADDED by Practitioner Request (NO DATA)")
+            return
+
+        self.patient_monitor_id_array.append(new_patient_id)
+        print("Patient ID: " + str(new_patient_id) + " ADDED by Practitioner Request (WITH DATA)")
+
+    def display_patients(self):
+
+        print("\nDisplaying all Patients being monitored WITH DATA:")
+
+        for patient_id in self.patient_monitor_id_array:
             print("\n" + self.patient_data[patient_id].fullname())
-            print(str(self.patient_data[patient_id].cholesterol_latest()))
-            print(str(self.patient_data[patient_id].blood_latest()))
+            if self.patient_data[patient_id].has_cholesterol():
+                print(str(self.patient_data[patient_id].cholesterol_latest()))
+            if self.patient_data[patient_id].has_blood():
+                print(str(self.patient_data[patient_id].blood_latest()))
+
 
 
 def get_next_url(response):
@@ -156,12 +188,16 @@ def get_next_url(response):
 if __name__ == '__main__':
     testPractitioner = Practitioner(850)
 
-    print("\n")
-    print(testPractitioner.url_practitioner_id())
-    print(testPractitioner.url_npi_id())
+    print("\nPractitioner ID Url: " + str(testPractitioner.url_practitioner_id()))
+    print("NPI ID Url: " + str(testPractitioner.url_npi_id()))
 
-    print("Is Logged in: " + str(testPractitioner.is_logged_in()))
-    print(testPractitioner.fullname())
+    print("\nIs Logged in: " + str(testPractitioner.is_logged_in()))
+    print("\nWelcome " + str(testPractitioner.fullname()) + "\n")
+
+    testPractitioner.add_patient(29163)
+    testPractitioner.add_patient(3912781)
+
+    testPractitioner.display_patients()
 
 
 
