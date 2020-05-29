@@ -65,11 +65,20 @@ class Patient:
                        + " " + str(patient_data['address'][0]['state']) + " " \
                        + str(patient_data['address'][0]['country'])
 
-    # Fullname
-    def fullname(self):
+    # Returning Strings of Details
+    def get_fullname(self):
         if not self.prefix:
             return self.given_name + " " + self.family_name
         return self.prefix + " " + self.given_name + " " + self.family_name
+
+    def get_address(self):
+        return self.address
+
+    def get_gender(self):
+        return self.gender
+
+    def get_birth_date(self):
+        return self.birth_date
 
     # Cholesterol and Blood
     def get_cholesterol(self):
@@ -158,7 +167,7 @@ def get_next_url(response):
 if __name__ == '__main__':
     testPatient = Patient(29163)
 
-    print(testPatient.fullname())
+    print(testPatient.get_fullname())
     print(testPatient.url_base())
     print(testPatient.url_cholesterol())
     print(testPatient.url_blood())

@@ -1,34 +1,14 @@
 from Screen import get_screen_dimensions
-from patient_list import get_patient_list
-from Encounter_list import get_all_patient_data
-from patient_information import*
-import os.path
-import sys
-
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-
-root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'  # Root URL
-npi_url = "http://hl7.org/fhir/sid/us-npi"
-
-def remove_patient(info_window, entry, prac_id, additional_id_array,patient_lb,remove_id_array):
-    patient = patient_lb.get(patient_lb.curselection())
-
-    remove_id = patient[0]
-    remove_id_array.append(remove_id)
-
-    if remove_id in additional_id_array:
-        additional_id_array.remove(remove_id)
-
-    create_info_window(info_window, entry, prac_id, True, additional_id_array, remove_id_array)
-
-def add_patient(info_window, entry, prac_id, additional_id_array,remove_id_array):
-    create_info_window(info_window, entry, prac_id, True, additional_id_array, remove_id_array)
+from Patient import Patient
+from Practitioner import Practitioner
+import tkinter as tk
 
 
 # This function destroy the information window when user is logging out.
 def destroy_info_window(logged_in, info_window):
     if logged_in:
         info_window.destroy()
+
 
 def failed_login(window):
     """
@@ -39,37 +19,6 @@ def failed_login(window):
     Fail_login_label = tk.Label(window, text=relogin_text)
     Fail_login_label.pack()
 
-def login(user_login):
-    """
-    Takes the user input identifier or practitioner id and attempts to match a practitioner profile within the fhir api
-    :param user_login: The login the user enters to access their data from the fhir api
-    :return: A valid identifier value and name of practitioner or False if failed
-    """
-    identifier_url = root_url + "Encounter?participant.identifier=" + npi_url + "|" + \
-                     user_login + "&_include=Encounter.participant.individual&_include=Encounter.patient"
-    data = requests.get(url=identifier_url).json()
-
-    try:  # Assume input is an Identifier, if this fails, fallback onto Practitioner ID
-        practitioner_url = root_url + str(data['entry'][0]['resource']['participant'][0]['individual']['reference'])
-    except KeyError:  # Invalid Practitioner ID, try assumption user_login is Identifier
-        practitioner_url = root_url + "Practitioner/" + user_login
-
-    data = requests.get(url=practitioner_url).json()
-
-    try:
-        if data['issue'][0]['severity'] == "error":  # Failed Login
-            return False, False
-    except KeyError:  # Successful Login
-        pass
-
-    for i in range(len(data['identifier'])):
-        if data['identifier'][i]['system'] == npi_url:
-            identifier_value = data['identifier'][i]['value']
-            fullname = str(data['name'][0]['prefix'][0]) + " " + str(data['name'][0]['given'][0]) + " " + \
-                       str(data['name'][0]['family'])
-            return identifier_value, fullname
-
-    return False, False
 
 def login_callback(window, entry):
     """
@@ -77,11 +26,12 @@ def login_callback(window, entry):
     :param window: the login window screen
     :param entry: the user entered id or identifier
     """
-    user_login, fullname = login(entry.get())
-    if user_login is False or fullname is False:
+    practitioner = Practitioner(entry.get())
+    if not practitioner.is_logged_in():
         failed_login(window)
     else:
-        create_info_window(window, entry)
+        create_info_window(window, practitioner)
+
 
 def set_login_window():
     """
@@ -107,24 +57,10 @@ def set_login_window():
 
     window.mainloop()
 
+
 # This function create the information window to show data associated to the user
 # identification
-def create_info_window(window, entry, prac_id=None, is_recall=False, additional_id_array=None, remove_id_array=None):
-    if additional_id_array is None:
-        additional_id_array = []
-
-    if remove_id_array is None:
-        remove_id_array = []
-
-    input = entry.get()
-
-
-    if is_recall is False:
-        prac_id = entry.get()
-    else:
-        additional_id_array.append(input)
-        if input in remove_id_array:
-            remove_id_array.remove(input)
+def create_info_window(window, practitioner):
 
     window.destroy()
 
@@ -136,18 +72,11 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
     x, y = get_screen_dimensions()
     info_window.geometry('%dx%d+%d+%d' % (x, y, x / 2, y / 2))
 
-    user_login, fullname = login(prac_id)
+    logged_in = True
 
-    welcome_message = "\nWelcome " + str(fullname) + "\n"
+    welcome_message = "\nWelcome " + practitioner.fullname() + "\n"
     label_entry = tk.Label(info_window, text=welcome_message)
     label_entry.pack()
-
-    cholesterol = get_all_patient_data(user_login, additional_id_array, remove_id_array)
-
-    if cholesterol is False:
-        main()
-
-    logged_in = True
 
     button_pressed = tk.IntVar()
 
@@ -166,37 +95,36 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
     add_button_pressed = tk.IntVar()
 
     add_patient_button = tk.Button(info_window, text="Add Patient ID", width=15, height=2, bg="green", fg="yellow",
-                                   command=lambda: [add_patient(info_window, entry, prac_id, additional_id_array, remove_id_array,)])
+                                   command=lambda: [add_patient_refresh(info_window, practitioner, entry.get())])
 
     add_patient_button.pack()
-
 
     lb_label = tk.Label(info_window, bg='grey', width=40, text=" ID     Name        Surname      Cholesterol")
     lb_label.pack()
 
     empty_label = tk.Label(info_window, fg='red', width=50, text="No patient information available")
-    if len(cholesterol) == 1:
+    if len(practitioner.get_patient_list()) < 1:
         empty_label.pack()
     else:
         empty_label.destroy()
 
-    patient_latest_list = get_patient_list(cholesterol)
-
+    # Cholesterol Handling
     cholesterol_array = []
 
     patient_lb = tk.Listbox(info_window)
-    for patient in patient_latest_list:
-        patient_ID = str(int(patient[0]))
-        patient_name = get_patient_name(patient_ID)
+    for patient_id in practitioner.get_patient_list():
+        if practitioner.get_patient(patient_id).has_cholesterol():
+            patient_name = practitioner.get_patient(patient_id).get_fullname()
+            cholesterol = practitioner.get_patient(patient_id).cholesterol_latest()[1]
 
-        cholesterol_array.append(float(patient[1].strip("mg/L").strip(" ")))
+            cholesterol_array.append(float(cholesterol))
 
-        patient = [patient_ID, patient_name, patient[1]]
-        patient_lb.insert('end', tuple(patient))
+            patient = [patient_id, patient_name, str(cholesterol) + " mg/dL"]
+            patient_lb.insert('end', tuple(patient))
 
     cholesterol_average = sum(cholesterol_array) / len(cholesterol_array)
 
-    for i in range(len(patient_latest_list)):
+    for i in range(len(cholesterol_array)):
         if cholesterol_array[i] > cholesterol_average:
             patient_lb.itemconfigure(i, {'fg': 'red'})
         else:
@@ -210,14 +138,14 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
     detail_text = tk.Text(info_window, height='5')
 
     history_button = tk.Button(info_window, text='Show patient detail', width=15, height=2, command=lambda: [
-            show_patient_history(history_text, cholesterol, patient_lb, patient_latest_list),
-            show_patient_detail(detail_text, patient_lb)])
+            show_patient_history(history_text, practitioner, patient_lb.get(patient_lb.curselection())[0]),
+            show_patient_detail(detail_text, practitioner, patient_lb.get(patient_lb.curselection())[0])])
     history_button.pack()
 
     remove_button_pressed = tk.IntVar()
 
     remove_patient_button = tk.Button(info_window, text="Remove Patient ID", width=15, height=2, bg="green", fg="yellow",
-                    command = lambda: [remove_patient(info_window, entry, prac_id, additional_id_array,patient_lb, remove_id_array)])
+                    command=lambda: [remove_patient_refresh(info_window, practitioner, patient_lb.get(patient_lb.curselection())[0])])
 
     remove_patient_button.pack()
 
@@ -227,12 +155,62 @@ def create_info_window(window, entry, prac_id=None, is_recall=False, additional_
     while logged_in:
         print("\nWaiting for user input...")
         out_button.wait_variable(button_pressed)  # Hold until Button is pressed
-        history_button.wait_variable(button_pressed)
+        # history_button.wait_variable(button_pressed)
         add_patient_button.wait_variable(add_button_pressed)
         remove_patient_button.wait_variable(remove_button_pressed)
         window.destroy()
         main()
     info_window.mainloop()
+
+
+def add_patient_refresh(window, practitioner, patient_id):
+    practitioner.add_patient(patient_id)
+    create_info_window(window, practitioner)
+
+
+def remove_patient_refresh(window, practitioner, patient_id):
+    practitioner.remove_patient(patient_id)
+    create_info_window(window, practitioner)
+
+
+def show_patient_detail(detail_text, practitioner, patient_id):
+    detail_text.delete('1.0', tk.END)
+
+    patient = practitioner.get_patient(patient_id)
+
+    detail_text.insert('end', "Patient Details: \n")
+    detail_text.insert('end', 'Name: ' + patient.get_fullname().title() + "\n")
+    detail_text.insert('end', 'Gender: ' + patient.get_gender().title() + "\n")
+    detail_text.insert('end', 'Birth Date: ' + patient.get_birth_date() + "\n")
+    detail_text.insert('end', 'Address: ' + patient.get_address() + "\n")
+
+
+def show_patient_history(history_text, practitioner, patient_id):
+    history_text.delete('1.0', tk.END)
+
+    patient = practitioner.get_patient(patient_id)
+
+    history_text.insert('end', "Patient History: \n")
+    history_text.insert('end', "   Patient        Cholesterol        Date    \n")
+
+    latest_date = practitioner.get_patient(patient_id).cholesterol_latest()[0]
+
+    index = 2
+
+    for i in range(len(patient.cholesterol_array)):
+
+        entry = patient.cholesterol_array[i]
+
+        text = "    " + patient.id + "    " + entry[1] + " mg/dL    " + entry[0].strftime("%m/%d/%Y")
+        history_text.insert('end', str(text) + "    ")
+        history_text.insert('end', "\n")
+        index += 1
+
+        if entry[0] == latest_date:
+            start_index = str(index) + '.0'
+            end_index = str(index) + '.100'
+            history_text.tag_add('latest', start_index, end_index)
+            history_text.tag_configure('latest', foreground='red')
 
 
 def main():

@@ -31,7 +31,7 @@ class Practitioner:
 
         if self.login_type is not None:
             self.get_personal_details()  # TODO: Potential to run Asynchronously
-            self.get_patient_list()  # TODO: Potential to run Asynchronously
+            self.get_practitioner_patients()  # TODO: Potential to run Asynchronously
             self.parse_patient_list()  # TODO: Potential to run Asynchronously
 
     # URLs and Handling
@@ -104,10 +104,12 @@ class Practitioner:
                        + str(address_details['state']) + " " + str(address_details['country'])
 
     # Patient Handling
-    def get_patient_list(self):
+    def get_practitioner_patients(self):
 
         next_url = self.url_patient_encounter()
         iterator = 0
+
+        print("")
 
         while next_url is not False:
             encounters_response = requests.get(url=next_url).json()
@@ -134,6 +136,8 @@ class Practitioner:
                 if patient_id in self.patient_base_id_array:  # Duplicate Patient_ID, Ignore ID
                     continue
                 self.patient_base_id_array.append(patient_id)
+
+        print("")
 
     def parse_patient_list(self):
         for patient_id in self.patient_base_id_array:
@@ -187,12 +191,18 @@ class Practitioner:
         self.patient_monitor_id_array.remove(patient_id)
         print("Patient ID: " + str(patient_id) + " REMOVED by Practitioner Request")
 
+    def get_patient_list(self):
+        return self.patient_monitor_id_array
+
+    def get_patient(self, patient_id):
+        return self.patient_data[patient_id]
+
     def display_patients(self):
 
         print("\nDisplaying all Patients being monitored WITH DATA:")
 
         for patient_id in self.patient_monitor_id_array:
-            print("\n" + self.patient_data[patient_id].id + " | " + self.patient_data[patient_id].fullname())
+            print("\n" + self.patient_data[patient_id].id + " | " + self.patient_data[patient_id].get_fullname())
             if self.patient_data[patient_id].has_cholesterol():
                 print(str(self.patient_data[patient_id].cholesterol_latest()))
             if self.patient_data[patient_id].has_blood():
