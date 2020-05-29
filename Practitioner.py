@@ -208,6 +208,50 @@ class Practitioner:
             if self.patient_data[patient_id].has_blood():
                 print(str(self.patient_data[patient_id].blood_latest()))
 
+    def cholesterol_average(self):
+        cholesterol_array = []
+
+        for patient_id in self.patient_monitor_id_array:
+            cholesterol_array.append(self.patient_data[patient_id].cholesterol_latest()[1])
+
+        valid_len = len(cholesterol_array)
+        total = float(0)
+        for value in cholesterol_array:
+            if not value:
+                valid_len -= 1
+            else:
+                total += float(value)
+
+        return total / valid_len
+
+    def blood_average(self):
+        diastolic_array = []
+        systolic_array = []
+
+        for patient_id in self.patient_monitor_id_array:
+            diastolic_array.append(self.patient_data[patient_id].blood_latest()[0][1])
+            systolic_array.append(self.patient_data[patient_id].blood_latest()[1][1])
+
+        diastolic_len = len(diastolic_array)
+        diastolic_total = float(0)
+
+        for value in diastolic_array:
+            if not value:
+                diastolic_len -= 1
+            else:
+                diastolic_total += float(value)
+
+        systolic_len = len(systolic_array)
+        systolic_total = float(0)
+
+        for value in systolic_array:
+            if not value:
+                systolic_len -= 1
+            else:
+                systolic_total += float(value)
+
+        return [diastolic_total/diastolic_len, systolic_total/systolic_len]
+
 
 def get_next_url(response):
     """

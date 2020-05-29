@@ -99,7 +99,8 @@ def create_info_window(window, practitioner):
 
     add_patient_button.pack()
 
-    lb_label = tk.Label(info_window, bg='grey', width=40, text=" ID     Name        Surname      Cholesterol")
+    lb_label = tk.Label(info_window, bg='grey', width=60, text=" ID     Name        Surname      Cholesterol    "
+                                                               "Diastolic Blood    Systolic Blood")
     lb_label.pack()
 
     empty_label = tk.Label(info_window, fg='red', width=50, text="No patient information available")
@@ -108,27 +109,60 @@ def create_info_window(window, practitioner):
     else:
         empty_label.destroy()
 
-    # Cholesterol Handling
-    cholesterol_array = []
-
     patient_lb = tk.Listbox(info_window)
     for patient_id in practitioner.get_patient_list():
+        patient_name = practitioner.get_patient(patient_id).get_fullname()
         if practitioner.get_patient(patient_id).has_cholesterol():
-            patient_name = practitioner.get_patient(patient_id).get_fullname()
             cholesterol = practitioner.get_patient(patient_id).cholesterol_latest()[1]
 
-            cholesterol_array.append(float(cholesterol))
+            if practitioner.get_patient(patient_id).has_blood():
+                diastolic_blood = practitioner.get_patient(patient_id).blood_latest()[0][1]
+                systolic_blood = practitioner.get_patient(patient_id).blood_latest()[1][1]
+            else:
+                diastolic_blood = "    -    "
+                systolic_blood = "    -    "
 
-            patient = [patient_id, patient_name, str(cholesterol) + " mg/dL"]
+            patient = [patient_id, patient_name, str(cholesterol) + " mg/dL",
+                       str(diastolic_blood) + " mm[Hg]", str(systolic_blood) + " mm[Hg]"]
+            patient_lb.insert('end', tuple(patient))
+        elif practitioner.get_patient(patient_id).has_blood():
+
+            diastolic_blood = practitioner.get_patient(patient_id).blood_latest()[0][1]
+            systolic_blood = practitioner.get_patient(patient_id).blood_latest()[1][1]
+
+            cholesterol = "    -    "
+
+            patient = [patient_id, patient_name, str(cholesterol) + " mg/dL",
+                       str(diastolic_blood) + " mm[Hg]", str(systolic_blood) + " mm[Hg]"]
             patient_lb.insert('end', tuple(patient))
 
-    cholesterol_average = sum(cholesterol_array) / len(cholesterol_array)
+    # TODO: Mark above average cholesterol as red
+    cholesterol_average = practitioner.cholesterol_average()
+    i = 0
+    for patient_id in practitioner.get_patient_list():
+        if practitioner.get_patient(patient_id).cholesterol_latest():
+            if float(practitioner.get_patient(patient_id).cholesterol_latest()[1]) > cholesterol_average:
+                patient_lb.itemconfigure(i, {'fg': 'red'})
+            else:
+                patient_lb.itemconfigure(i, {'fg': 'black'})
+        i += 1
 
-    for i in range(len(cholesterol_array)):
-        if cholesterol_array[i] > cholesterol_average:
-            patient_lb.itemconfigure(i, {'fg': 'red'})
-        else:
-            patient_lb.itemconfigure(i, {'fg': 'black'})
+    # # TODO: Mark above average blood as purple
+    # blood_average = practitioner.blood_average()
+    # i = 0
+    # for patient_id in practitioner.get_patient_list():
+    #     if practitioner.get_patient(patient_id).blood_latest():
+    #         if float(practitioner.get_patient(patient_id).blood_latest()[0][1]) > blood_average[0]:
+    #             patient_lb.itemconfigure(i, {'fg': 'purple'})
+    #         else:
+    #             patient_lb.itemconfigure(i, {'fg': 'black'})
+    #
+    #         if float(practitioner.get_patient(patient_id).blood_latest()[1][1]) > blood_average[1]:
+    #             patient_lb.itemconfigure(i, {'fg': 'purple'})
+    #         else:
+    #             patient_lb.itemconfigure(i, {'fg': 'black'})
+    #
+    #     i += 1
 
     patient_lb.config(width=0, height=0)
 
