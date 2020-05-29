@@ -1,5 +1,4 @@
 from Screen import get_screen_dimensions
-from Patient import Patient
 from Practitioner import Practitioner
 import tkinter as tk
 
