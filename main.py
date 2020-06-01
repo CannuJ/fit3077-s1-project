@@ -25,6 +25,8 @@ def login_callback(window, entry,systolic_bp_entry, diastolic_bp_entry):
     Checks whether login is valid before proceeding to info_window
     :param window: the login window screen
     :param entry: the user entered id or identifier
+    :param systolic_bp_entry: the user entered systolic limit
+    :param diastolic_bp_entry: the user entered diastolic limit
     """
 
     if len(systolic_bp_entry.get()) == 0:
@@ -234,17 +236,38 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
     info_window.mainloop()
 
 
+#Collection of functions called when different buttons are clicked
+
 def add_patient_refresh(window, practitioner, patient_id):
+    """
+
+    :param window: the information window
+    :param practitioner: practitioner who logged in
+    :param patient_id: the new added patient's id
+    :return:
+    """
     practitioner.add_patient(patient_id)
     create_info_window(window, practitioner)
 
-
 def remove_patient_refresh(window, practitioner, patient_id):
+    """
+
+    :param window: the info window
+    :param practitioner: practitioner who logged in
+    :param patient_id: the removing patient's id
+    :return:
+    """
     practitioner.remove_patient(patient_id)
     create_info_window(window, practitioner)
 
-
 def show_patient_detail(detail_text, practitioner, patient_id):
+    """
+
+    :param detail_text: text section that display the details of patient
+    :param practitioner: the logged in practitioner
+    :param patient_id: the monitoring patient's id
+    :return:
+    """
     detail_text.delete('1.0','end')
 
     patient = practitioner.get_patient(patient_id)
@@ -256,6 +279,15 @@ def show_patient_detail(detail_text, practitioner, patient_id):
     detail_text.insert('end', 'Address: ' + patient.get_address() + "\n")
 
 def show_patient_bp(text,practitioner,systolic_lim,diastolic_lim,patient_id):
+    """
+
+    :param text: the text section displaying blood pressure of patient
+    :param practitioner: the logged in practitioner
+    :param systolic_lim: the set systolic blood pressure limit
+    :param diastolic_lim: the set diastolic blood pressure limit
+    :param patient_id: the monitoring patient's id
+    :return:
+    """
     text.delete('1.0','end')
 
     patient = practitioner.get_patient(patient_id)
@@ -288,6 +320,13 @@ def show_patient_bp(text,practitioner,systolic_lim,diastolic_lim,patient_id):
             text.tag_configure('dia',foreground='blue')
 
 def show_patient_cholesterol_history(history_text, practitioner, patient_id):
+    """
+
+    :param history_text: the text section displaying historical cholesterol measurement of patient
+    :param practitioner: the logged in practitioner
+    :param patient_id: the monitoring patient's id
+    :return:
+    """
     history_text.delete('1.0','end')
 
     patient = practitioner.get_patient(patient_id)
