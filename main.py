@@ -1,8 +1,7 @@
 from Screen import get_screen_dimensions
 from Practitioner import Practitioner
 import tkinter as tk
-from datetime import datetime
-
+from Graph import total_cholesterol_graph
 
 # This function destroy the information window when user is logging out.
 def destroy_info_window(logged_in, info_window):
@@ -88,9 +87,16 @@ def set_login_window():
     window.mainloop()
 
 
-# This function create the information window to show data associated to the user
-# identification
+
 def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
+    """
+
+    :param window: The previous log in window
+    :param practitioner: The logged in practitioner
+    :param systolic_lim: Systolic blood pressure limit set by user
+    :param diastolic_lim: Diastolic blood pressure limit set by user
+    :return:
+    """
     window.destroy()
 
     info_window = tk.Tk()
@@ -198,8 +204,10 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
     #     i += 1
 
     patient_lb.config(width=0, height=0)
-
     patient_lb.pack()
+
+    cholesterol_graph = total_cholesterol_graph(info_window,practitioner)
+    cholesterol_graph.pack(side =tk.LEFT)
 
     detail_text = tk.Text(info_window, height='5')
     history_text = tk.Text(info_window, height='6')
