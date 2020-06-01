@@ -1,6 +1,7 @@
 from Screen import get_screen_dimensions
 from Practitioner import Practitioner
 import tkinter as tk
+from datetime import datetime
 
 
 # This function destroy the information window when user is logging out.
@@ -19,17 +20,34 @@ def failed_login(window):
     Fail_login_label.pack()
 
 
-def login_callback(window, entry):
+def login_callback(window, entry,systolic_bp_entry, diastolic_bp_entry):
     """
     Checks whether login is valid before proceeding to info_window
     :param window: the login window screen
     :param entry: the user entered id or identifier
     """
+
+    if len(systolic_bp_entry.get()) == 0:
+        systolic_lim = 120
+    else:
+        try:
+            systolic_lim = int(systolic_bp_entry.get())
+        except:
+            systolic_lim = 120
+
+    if len(diastolic_bp_entry.get()) == 0:
+        diastolic_lim = 80
+    else:
+        try:
+            diastolic_lim = int(diastolic_bp_entry.get())
+        except:
+            diastolic_lim = 80
+
     practitioner = Practitioner(entry.get())
     if not practitioner.is_logged_in():
         failed_login(window)
     else:
-        create_info_window(window, practitioner)
+        create_info_window(window, practitioner,systolic_lim,diastolic_lim)
 
 
 def set_login_window():
@@ -48,10 +66,21 @@ def set_login_window():
     label_entry.pack()
     entry = tk.Entry(master=frame_entry)
     entry.pack()
+
+    systolic_bp_label = tk.Label(master=frame_entry, text="systolic blood pressure limit (Default to 120 mm[Hg])")
+    systolic_bp_label.pack()
+    systolic_bp_entry = tk.Entry(master=frame_entry)
+    systolic_bp_entry.pack()
+
+    diastolic_bp_label = tk.Label(master=frame_entry, text="diastolic blood pressure limit (Default to 80 mm[Hg])")
+    diastolic_bp_label.pack()
+    diastolic_bp_entry = tk.Entry(master=frame_entry)
+    diastolic_bp_entry.pack()
+
     frame_entry.pack()
 
     button = tk.Button(text="Login", width=5, height=2, bg="blue", fg="yellow",
-                       command=lambda: login_callback(window, entry))
+                       command=lambda: login_callback(window, entry,systolic_bp_entry,diastolic_bp_entry))
     button.place(relx=0.5, rely=0.5, anchor="center")
 
     window.mainloop()
@@ -59,8 +88,7 @@ def set_login_window():
 
 # This function create the information window to show data associated to the user
 # identification
-def create_info_window(window, practitioner):
-
+def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
     window.destroy()
 
     info_window = tk.Tk()
@@ -74,8 +102,12 @@ def create_info_window(window, practitioner):
     logged_in = True
 
     welcome_message = "\nWelcome " + practitioner.fullname() + "\n"
+    limit_message= "Diastolic limit: "+ str(diastolic_lim) + "mm[Hg]"+ "   " + " Systolic limit: "+str(systolic_lim) +"mm[Hg]"+"\n"
     label_entry = tk.Label(info_window, text=welcome_message)
     label_entry.pack()
+
+    limit_label = tk.Label(info_window, text=limit_message, bg='black', fg='yellow')
+    limit_label.pack()
 
     button_pressed = tk.IntVar()
 
@@ -167,13 +199,18 @@ def create_info_window(window, practitioner):
 
     patient_lb.pack()
 
-    history_text = tk.Text(info_window, height='6')
     detail_text = tk.Text(info_window, height='5')
+    history_text = tk.Text(info_window, height='6')
+    blood_pressure_text = tk.Text(info_window, height='3')
 
     history_button = tk.Button(info_window, text='Show patient detail', width=15, height=2, command=lambda: [
-            show_patient_history(history_text, practitioner, patient_lb.get(patient_lb.curselection())[0]),
+            show_patient_cholesterol_history(history_text, practitioner, patient_lb.get(patient_lb.curselection())[0]),
             show_patient_detail(detail_text, practitioner, patient_lb.get(patient_lb.curselection())[0])])
     history_button.pack()
+
+    blood_pressure_button = tk.Button(info_window, text='Show blood pressure', width=15, height=2, command=lambda :[
+            show_patient_bp(blood_pressure_text,practitioner,systolic_lim,diastolic_lim,patient_lb.get(patient_lb.curselection())[0])])
+    blood_pressure_button.pack()
 
     remove_button_pressed = tk.IntVar()
 
@@ -182,8 +219,9 @@ def create_info_window(window, practitioner):
 
     remove_patient_button.pack()
 
-    history_text.pack()
     detail_text.pack()
+    history_text.pack()
+    blood_pressure_text.pack()
 
     while logged_in:
         print("\nWaiting for user input...")
@@ -207,7 +245,7 @@ def remove_patient_refresh(window, practitioner, patient_id):
 
 
 def show_patient_detail(detail_text, practitioner, patient_id):
-    detail_text.delete('1.0', tk.END)
+    detail_text.delete('1.0','end')
 
     patient = practitioner.get_patient(patient_id)
 
@@ -217,13 +255,44 @@ def show_patient_detail(detail_text, practitioner, patient_id):
     detail_text.insert('end', 'Birth Date: ' + patient.get_birth_date() + "\n")
     detail_text.insert('end', 'Address: ' + patient.get_address() + "\n")
 
-
-def show_patient_history(history_text, practitioner, patient_id):
-    history_text.delete('1.0', tk.END)
+def show_patient_bp(text,practitioner,systolic_lim,diastolic_lim,patient_id):
+    text.delete('1.0','end')
 
     patient = practitioner.get_patient(patient_id)
 
-    history_text.insert('end', "Patient History: \n")
+    text.insert('end',patient.get_fullname() + "'s latest blood pressure measurement: \n")
+    if not patient.has_blood():
+        text.insert('end', "No blood pressure measurement for this patient!")
+    else:
+        sys_list = patient.systolic_latest()
+        sys_measurement = float(sys_list[1])
+        sys_date = sys_list[0]
+        sys_unit = sys_list[2]
+
+        text.insert('end', "Systolic blood pressure: ")
+        text.insert('end', str(sys_measurement)  +" " + sys_unit + " " + str(sys_date) + "\n")
+        if sys_measurement > systolic_lim:
+            text.tag_add('sys','2.26','2.100')
+            text.tag_configure('sys',foreground='blue')
+
+
+        dia_list = patient.diastolic_latest()
+        dia_measurement = float(dia_list[1])
+        dia_date = dia_list[0]
+        dia_unit = dia_list[2]
+
+        text.insert('end', "Diastolic blood pressure: ")
+        text.insert('end', str(dia_measurement) + " " + dia_unit + " " + str(dia_date) + "\n")
+        if dia_measurement > diastolic_lim:
+            text.tag_add('dia','3.26','3.100')
+            text.tag_configure('dia',foreground='blue')
+
+def show_patient_cholesterol_history(history_text, practitioner, patient_id):
+    history_text.delete('1.0','end')
+
+    patient = practitioner.get_patient(patient_id)
+
+    history_text.insert('end', patient.get_fullname() + "'s Cholesterol Measurement History: \n")
     history_text.insert('end', "   Patient        Cholesterol        Date    \n")
 
     latest_date = practitioner.get_patient(patient_id).cholesterol_latest()[0]
