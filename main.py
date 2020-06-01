@@ -109,46 +109,52 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
 
     logged_in = True
 
+    selection_button_frame = tk.Frame(info_window)
+    graph_frame = tk.Frame(info_window)
+    output_frame = tk.Frame(info_window)
+
+    selection_button_frame.grid(row=0,column=0)
+    graph_frame.grid(row=0,column=1)
+    output_frame.grid(row=1,columnspan=2)
+
     welcome_message = "\nWelcome " + practitioner.fullname() + "\n"
     limit_message= "Diastolic limit: "+ str(diastolic_lim) + "mm[Hg]"+ "   " + " Systolic limit: "+str(systolic_lim) +"mm[Hg]"+"\n"
-    label_entry = tk.Label(info_window, text=welcome_message)
-    label_entry.pack()
+    label_entry = tk.Label(selection_button_frame, text=welcome_message)
+    label_entry.grid(row=0,column=0)
 
-    limit_label = tk.Label(info_window, text=limit_message, bg='black', fg='yellow')
-    limit_label.pack()
+    limit_label = tk.Label(selection_button_frame, text=limit_message, bg='black', fg='yellow')
+    limit_label.grid(row=1, column=0, sticky='w')
 
     button_pressed = tk.IntVar()
 
-    out_button = tk.Button(info_window, text="Logout", width=10, height=2, bg="blue", fg="yellow",
+    out_button = tk.Button(selection_button_frame, text="Logout", width=10, height=2, bg="blue", fg="yellow",
                            command=lambda: [destroy_info_window(logged_in, info_window), set_login_window()])
-    out_button.pack()
+    out_button.grid(row=1,column=0,sticky='e')
 
     # Add Patient Feature
-    frame_entry = tk.Frame()
-    label_entry = tk.Label(master=frame_entry, text="Patient ID")
-    label_entry.pack()
-    entry = tk.Entry(master=frame_entry)
-    entry.pack()
-    frame_entry.pack()
+    label_entry = tk.Label(master=selection_button_frame, text="Patient ID:")
+    label_entry.grid(row=2,column=0,sticky='w')
+    entry = tk.Entry(master=selection_button_frame)
+    entry.grid(row=2, column=0)
 
     add_button_pressed = tk.IntVar()
 
-    add_patient_button = tk.Button(info_window, text="Add Patient ID", width=15, height=2, bg="green", fg="yellow",
-                                   command=lambda: [add_patient_refresh(info_window, practitioner, entry.get())])
+    add_patient_button = tk.Button(selection_button_frame, text="Add Patient ID", width=15, height=2, bg="green", fg="yellow",
+                                   command=lambda: [add_patient_refresh(info_window, practitioner, entry.get(),systolic_lim,diastolic_lim)])
 
-    add_patient_button.pack()
+    add_patient_button.grid(row=2, column=0,sticky='e')
 
-    lb_label = tk.Label(info_window, bg='grey', width=60, text=" ID     Name        Surname      Cholesterol    "
+    lb_label = tk.Label(selection_button_frame, bg='grey', width=60, text=" ID     Name        Surname      Cholesterol    "
                                                                "Diastolic Blood    Systolic Blood")
-    lb_label.pack()
+    lb_label.grid(row=3, column=0, sticky='e')
 
-    empty_label = tk.Label(info_window, fg='red', width=50, text="No patient information available")
+    empty_label = tk.Label(selection_button_frame, fg='red', width=50, text="No patient information available")
     if len(practitioner.get_patient_list()) < 1:
-        empty_label.pack()
+        empty_label.grid(row=4, column=0, sticky='e')
     else:
         empty_label.destroy()
 
-    patient_lb = tk.Listbox(info_window)
+    patient_lb = tk.Listbox(selection_button_frame)
     for patient_id in practitioner.get_patient_list():
         patient_name = practitioner.get_patient(patient_id).get_fullname()
         if practitioner.get_patient(patient_id).has_cholesterol():
@@ -204,34 +210,36 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
     #     i += 1
 
     patient_lb.config(width=0, height=0)
-    patient_lb.pack()
+    patient_lb.grid(row=4,column=0,sticky='n')
 
-    cholesterol_graph = total_cholesterol_graph(info_window,practitioner)
-    cholesterol_graph.pack(side =tk.LEFT)
 
-    detail_text = tk.Text(info_window, height='5')
-    history_text = tk.Text(info_window, height='6')
-    blood_pressure_text = tk.Text(info_window, height='3')
+    cholesterol_graph = total_cholesterol_graph(graph_frame,practitioner)
+    cholesterol_graph.grid()
 
-    history_button = tk.Button(info_window, text='Show patient detail', width=15, height=2, command=lambda: [
+    detail_text = tk.Text(output_frame, height='8')
+    history_text = tk.Text(output_frame, height='13')
+    blood_pressure_text = tk.Text(output_frame, height='5')
+
+    history_button = tk.Button(selection_button_frame, text='Show patient detail', width=15, height=2, command=lambda: [
             show_patient_cholesterol_history(history_text, practitioner, patient_lb.get(patient_lb.curselection())[0]),
             show_patient_detail(detail_text, practitioner, patient_lb.get(patient_lb.curselection())[0])])
-    history_button.pack()
+    history_button.grid(row=5,column=0,sticky='wn')
 
-    blood_pressure_button = tk.Button(info_window, text='Show blood pressure', width=15, height=2, command=lambda :[
+    blood_pressure_button = tk.Button(selection_button_frame, text='Show blood pressure', width=15, height=2, command=lambda :[
             show_patient_bp(blood_pressure_text,practitioner,systolic_lim,diastolic_lim,patient_lb.get(patient_lb.curselection())[0])])
-    blood_pressure_button.pack()
+    blood_pressure_button.grid(row=5,column=0,sticky='n')
 
     remove_button_pressed = tk.IntVar()
 
-    remove_patient_button = tk.Button(info_window, text="Remove Patient ID", width=15, height=2, bg="green", fg="yellow",
-                    command=lambda: [remove_patient_refresh(info_window, practitioner, patient_lb.get(patient_lb.curselection())[0])])
+    remove_patient_button = tk.Button(selection_button_frame, text="Remove Patient ID", width=15, height=2, bg="green", fg="yellow",
+                    command=lambda: [remove_patient_refresh(info_window, practitioner, patient_lb.get(patient_lb.curselection())[0],systolic_lim,diastolic_lim)])
 
-    remove_patient_button.pack()
 
-    detail_text.pack()
-    history_text.pack()
-    blood_pressure_text.pack()
+    remove_patient_button.grid(row=5,column=0,sticky='en')
+
+    history_text.grid(row=0, column=0,sticky='n')
+    detail_text.grid(row=0, column=1,sticky='n')
+    blood_pressure_text.grid(row=0, column=1,sticky='s')
 
     while logged_in:
         print("\nWaiting for user input...")
@@ -246,7 +254,7 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
 
 #Collection of functions called when different buttons are clicked
 
-def add_patient_refresh(window, practitioner, patient_id):
+def add_patient_refresh(window, practitioner, patient_id, sys_lim, dia_lim):
     """
 
     :param window: the information window
@@ -255,9 +263,9 @@ def add_patient_refresh(window, practitioner, patient_id):
     :return:
     """
     practitioner.add_patient(patient_id)
-    create_info_window(window, practitioner)
+    create_info_window(window, practitioner,sys_lim, dia_lim)
 
-def remove_patient_refresh(window, practitioner, patient_id):
+def remove_patient_refresh(window, practitioner, patient_id,sys_lim,dia_lim):
     """
 
     :param window: the info window
@@ -266,7 +274,7 @@ def remove_patient_refresh(window, practitioner, patient_id):
     :return:
     """
     practitioner.remove_patient(patient_id)
-    create_info_window(window, practitioner)
+    create_info_window(window, practitioner,sys_lim,dia_lim)
 
 def show_patient_detail(detail_text, practitioner, patient_id):
     """

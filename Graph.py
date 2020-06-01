@@ -22,13 +22,13 @@ def total_cholesterol_graph(window, practitioner):
     cholesterol_dataframe = DataFrame(cholesterol_data, columns=['Patient Name', 'Cholesterol value'])
 
     #Construct graph
-    figure = plt.Figure(figsize=(3,3), dpi=100)
+    figure = plt.Figure(figsize=(4,4), dpi=100)
     ax = figure.add_subplot(111)
     bar = FigureCanvasTkAgg(figure, window)
     graph = bar.get_tk_widget()
 
     cholesterol_dataframe = cholesterol_dataframe[['Patient Name', 'Cholesterol value']].groupby('Patient Name').sum()
-    cholesterol_dataframe.plot(kind='bar', legend=True, ax=ax)
+    cholesterol_dataframe.plot(kind='bar', legend=False, ax=ax, fontsize=5)
     ax.set_title('Total Cholesterol mg/dL')
 
     return graph
