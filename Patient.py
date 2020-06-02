@@ -71,6 +71,9 @@ class Patient:
             return self.given_name + " " + self.family_name
         return self.prefix + " " + self.given_name + " " + self.family_name
 
+    def get_short_fullname(self):
+        return self.given_name + "." + self.family_name[0]
+
     def get_address(self):
         return self.address
 

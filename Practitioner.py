@@ -212,7 +212,9 @@ class Practitioner:
         cholesterol_array = []
 
         for patient_id in self.patient_monitor_id_array:
-            cholesterol_array.append(self.patient_data[patient_id].cholesterol_latest()[1])
+            cholesterol_record = self.patient_data[patient_id].cholesterol_latest()
+            if cholesterol_record is not None:
+                cholesterol_array.append(cholesterol_record[1])
 
         valid_len = len(cholesterol_array)
         total = float(0)
@@ -221,8 +223,11 @@ class Practitioner:
                 valid_len -= 1
             else:
                 total += float(value)
-
-        return total / valid_len
+        if valid_len > 0:
+            average = total/valid_len
+        else:
+            average = 0
+        return average
 
     def blood_average(self):
         diastolic_array = []
