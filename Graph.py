@@ -1,10 +1,10 @@
+import numpy as np
 from pandas import DataFrame
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import numpy as np
 
 def total_cholesterol_graph(window, practitioner):
-    #Get the corresponding dataframe ready
+    #Get the corresponding data ready
     patient_list = practitioner.get_patient_list()
     name_list = []
     cholesterol_list = []
@@ -19,12 +19,6 @@ def total_cholesterol_graph(window, practitioner):
             name = patient.get_short_fullname()
             name_list.append(name)
 
-
-
-    cholesterol_data = {'Patient Name': name_list,
-            'Cholesterol value': cholesterol_list}
-
-    cholesterol_dataframe = DataFrame(cholesterol_data, columns=['Patient Name', 'Cholesterol value'])
 
     #Construct graph
     figure = plt.Figure(figsize=(5,3), dpi=100)
@@ -56,3 +50,35 @@ def total_cholesterol_graph(window, practitioner):
     autolabel(rect)
 
     return graph
+
+def blood_pressure_history_graph(root, practitioner, patient_id):
+    bp_list = []
+    date_list = []
+
+    patient= practitioner.get_patient(patient_id)
+    patient_name = patient.get_fullname()
+    full_bp_array = patient.blood_array["Systolic Blood Pressure"].copy()
+
+    for i in range(5):
+        latest = full_bp_array.pop(max(full_bp_array))
+        latest_measurement = int(latest[1])
+        latest_date = latest[0].strftime("%m/%d/%Y")
+        bp_list.insert(0,latest_measurement)
+        date_list.insert(0,latest_date)
+
+    data = {'date': date_list,'Systolic blood pressure': bp_list}
+    df = DataFrame(data, columns=['date', 'Systolic blood pressure'])
+
+    figure = plt.Figure(figsize=(5, 4), dpi=100)
+    ax = figure.add_subplot(111)
+    line_chart = FigureCanvasTkAgg(figure, root)
+    line_chart.get_tk_widget()
+
+    df = df[['date', 'Systolic blood pressure']].groupby('date').sum()
+    df.plot(kind='line', ax=ax, color='r',marker='o', fontsize=10)
+    ax.set_title(patient_name)
+
+    return line_chart
+
+
+
