@@ -24,6 +24,7 @@ class Practitioner:
         self.patient_base_id_array = []
         self.patient_parsed_id_array = []
         self.patient_monitor_id_array = []
+        self.patient_bp_monitor_id_array = []
 
         self.patient_data = {}
 
@@ -190,6 +191,14 @@ class Practitioner:
 
         self.patient_monitor_id_array.remove(patient_id)
         print("Patient ID: " + str(patient_id) + " REMOVED by Practitioner Request")
+
+    def add_bp_monitor_patient(self,patient_id):
+        patient_id = str(patient_id)
+        self.patient_bp_monitor_id_array.append(patient_id)
+
+    def remove_bp_monitor_patient(self,patient_id):
+        patient_id = str(patient_id)
+        self.patient_bp_monitor_id_array.remove(patient_id)
 
     def get_patient_list(self):
         return self.patient_monitor_id_array
