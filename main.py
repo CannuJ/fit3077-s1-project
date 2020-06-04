@@ -2,6 +2,7 @@ from Screen import get_screen_dimensions
 from Practitioner import Practitioner
 import tkinter as tk
 from Graph import total_cholesterol_graph
+from Blood_pressure_monitor import Bp_monitor_window
 
 # This function destroy the information window when user is logging out.
 def destroy_info_window(logged_in, info_window):
@@ -112,10 +113,12 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
     selection_button_frame = tk.Frame(info_window)
     graph_frame = tk.Frame(info_window)
     output_frame = tk.Frame(info_window)
+    bp_monitor_frame = tk.Frame(info_window)
 
     selection_button_frame.grid(row=0,column=0)
     graph_frame.grid(row=0,column=1)
     output_frame.grid(row=1,columnspan=2)
+    bp_monitor_frame.grid(row=2, columnspan=2)
 
     welcome_message = "\nWelcome " + practitioner.fullname() + "\n"
     limit_message= "Diastolic limit: "+ str(diastolic_lim) + "mm[Hg]"+ "   " + " Systolic limit: "+str(systolic_lim) +"mm[Hg]"+"\n"
@@ -241,12 +244,21 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
     detail_text.grid(row=0, column=1,sticky='n')
     blood_pressure_text.grid(row=0, column=1,sticky='s')
 
+    bp_monitor_button_pressed = tk.IntVar()
+
+    bp_monitor = Bp_monitor_window(practitioner)
+    bp_monitor_button = tk.Button(bp_monitor_frame, text="Add to Blood pressure monitor", width=35, height=2, bg="blue",
+                                  command=lambda: [add_bp_monitor_patient(patient_lb.get(patient_lb.curselection())[0], practitioner,bp_monitor)])
+    bp_monitor_button.grid(sticky='n')
+
+
     while logged_in:
         print("\nWaiting for user input...")
         out_button.wait_variable(button_pressed)  # Hold until Button is pressed
         # history_button.wait_variable(button_pressed)
         add_patient_button.wait_variable(add_button_pressed)
         remove_patient_button.wait_variable(remove_button_pressed)
+        bp_monitor_button.wait_variable(bp_monitor_button_pressed)
         window.destroy()
         main()
     info_window.mainloop()
@@ -368,6 +380,10 @@ def show_patient_cholesterol_history(history_text, practitioner, patient_id):
             end_index = str(index) + '.100'
             history_text.tag_add('latest', start_index, end_index)
             history_text.tag_configure('latest', foreground='red')
+
+def add_bp_monitor_patient(patient_id, practitioner, bp_monitor):
+    practitioner.add_bp_monitor_patient(patient_id)
+    bp_monitor.create_window()
 
 
 def main():
