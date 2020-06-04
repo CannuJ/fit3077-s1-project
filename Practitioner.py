@@ -192,9 +192,13 @@ class Practitioner:
         self.patient_monitor_id_array.remove(patient_id)
         print("Patient ID: " + str(patient_id) + " REMOVED by Practitioner Request")
 
+        if patient_id in self.patient_bp_monitor_id_array:
+            self.remove_bp_monitor_patient(patient_id)
+
     def add_bp_monitor_patient(self,patient_id):
         patient_id = str(patient_id)
-        self.patient_bp_monitor_id_array.append(patient_id)
+        if patient_id not in self.patient_bp_monitor_id_array:
+            self.patient_bp_monitor_id_array.append(patient_id)
 
     def remove_bp_monitor_patient(self,patient_id):
         patient_id = str(patient_id)
