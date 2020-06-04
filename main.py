@@ -245,10 +245,11 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
     blood_pressure_text.grid(row=0, column=1,sticky='s')
 
     bp_monitor_button_pressed = tk.IntVar()
-
+    bp_unavailable_text = "This patient has healthy blood pressure," + "\n" + "blood pressure history unavailable"
+    bp_unavailable_label = tk.Label(bp_monitor_frame, text=bp_unavailable_text)
     bp_monitor = Bp_monitor_window(practitioner)
     bp_monitor_button = tk.Button(bp_monitor_frame, text="Add to Blood pressure monitor", width=35, height=2, bg="blue",
-                                  command=lambda: [add_bp_monitor_patient(patient_lb.get(patient_lb.curselection())[0], practitioner,bp_monitor)])
+                                  command=lambda: [add_bp_monitor_patient(bp_unavailable_label, systolic_lim, patient_lb.get(patient_lb.curselection())[0], practitioner, bp_monitor)])
     bp_monitor_button.grid(sticky='n')
 
 
@@ -381,9 +382,15 @@ def show_patient_cholesterol_history(history_text, practitioner, patient_id):
             history_text.tag_add('latest', start_index, end_index)
             history_text.tag_configure('latest', foreground='red')
 
-def add_bp_monitor_patient(patient_id, practitioner, bp_monitor):
-    practitioner.add_bp_monitor_patient(patient_id)
-    bp_monitor.create_window()
+
+def add_bp_monitor_patient(bp_label,sys_lim,patient_id, practitioner, bp_monitor):
+    patient = practitioner.get_patient(patient_id)
+    if float(patient.blood_latest()[1][1]) > sys_lim:
+        practitioner.add_bp_monitor_patient(patient_id)
+        bp_monitor.create_window()
+        bp_label.grid_forget()
+    else:
+        bp_label.grid()
 
 
 def main():
