@@ -69,14 +69,17 @@ def blood_pressure_history_graph(root, practitioner, patient_id):
     data = {'date': date_list,'Systolic blood pressure': bp_list}
     df = DataFrame(data, columns=['date', 'Systolic blood pressure'])
 
-    figure = plt.Figure(figsize=(3, 3), dpi=100)
+    figure = plt.Figure(figsize=(4.2, 2.4), dpi=100)
     ax = figure.add_subplot(111)
+    ax.set_ylabel('mm[Hg]')
+    ax.set_xticks(np.arange(5))
+    ax.set_xticklabels(date_list,{'fontsize':8})
     line_chart = FigureCanvasTkAgg(figure, root)
     line_chart.get_tk_widget().grid()
 
     df = df[['date', 'Systolic blood pressure']].groupby('date').sum()
-    df.plot(kind='line', ax=ax, color='r',marker='o', fontsize=10)
-    ax.set_title(patient_name)
+    df.plot(kind='line', ax=ax, color='r',marker='o', fontsize=8)
+    ax.set_title(patient_name, fontsize=9)
 
 
 
