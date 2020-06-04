@@ -60,8 +60,8 @@ def blood_pressure_history_graph(root, practitioner, patient_id):
     full_bp_array = patient.blood_array["Systolic Blood Pressure"].copy()
 
     for i in range(5):
-        latest = full_bp_array.pop(max(full_bp_array))
-        latest_measurement = int(latest[1])
+        latest = full_bp_array.pop(full_bp_array.index(max(full_bp_array)))
+        latest_measurement = float(latest[1])
         latest_date = latest[0].strftime("%m/%d/%Y")
         bp_list.insert(0,latest_measurement)
         date_list.insert(0,latest_date)
@@ -69,16 +69,15 @@ def blood_pressure_history_graph(root, practitioner, patient_id):
     data = {'date': date_list,'Systolic blood pressure': bp_list}
     df = DataFrame(data, columns=['date', 'Systolic blood pressure'])
 
-    figure = plt.Figure(figsize=(5, 4), dpi=100)
+    figure = plt.Figure(figsize=(3, 3), dpi=100)
     ax = figure.add_subplot(111)
     line_chart = FigureCanvasTkAgg(figure, root)
-    line_chart.get_tk_widget()
+    line_chart.get_tk_widget().grid()
 
     df = df[['date', 'Systolic blood pressure']].groupby('date').sum()
     df.plot(kind='line', ax=ax, color='r',marker='o', fontsize=10)
     ax.set_title(patient_name)
 
-    return line_chart
 
 
 
