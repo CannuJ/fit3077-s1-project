@@ -1,5 +1,6 @@
 import requests
 from Patient import Patient
+import math
 
 root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'  # Root URL
 npi_url = "http://hl7.org/fhir/sid/us-npi"
@@ -25,6 +26,10 @@ class Practitioner:
         self.patient_parsed_id_array = []
         self.patient_monitor_id_array = []
         self.patient_bp_monitor_id_array = []
+
+        self.current_page = 1
+        self.total_page = 1
+        self.page_id_array = []
 
         self.patient_data = {}
 
@@ -152,6 +157,7 @@ class Practitioner:
 
             self.patient_monitor_id_array.append(patient_id)
             print("Patient ID: " + str(patient_id) + " processed from Practitioner Encounters (WITH DATA)")
+        self.total_page = math.ceil(int(len(self.patient_monitor_id_array))/5)
 
     def add_patient(self, patient_id):
         patient_id = str(patient_id)  # Testing through code assumes ID is int
@@ -206,6 +212,38 @@ class Practitioner:
 
     def get_patient_list(self):
         return self.patient_monitor_id_array
+
+    def get_current_page_patient_list(self):
+        page = self.current_page
+        start_index = (page-1)*5
+
+        if self.current_page == self.total_page:
+            end_index = int(len(self.patient_monitor_id_array))
+        else:
+            end_index = start_index + 5
+        self.page_id_array = self.patient_monitor_id_array[start_index:end_index]
+        return self.page_id_array
+
+    def next_page(self):
+        if self.current_page < self.total_page:
+            self.current_page += 1
+        else:
+            self.current_page = 1
+        self.get_current_page_patient_list()
+
+    def previous_page(self):
+        if self.current_page > 1:
+            self.current_page -= 1
+        else:
+            self.current_page = self.total_page
+        self.get_current_page_patient_list()
+
+    def get_total_page(self):
+        return self.total_page
+
+    def get_current_page(self):
+        return self.current_page
+
 
     def get_patient(self, patient_id):
         return self.patient_data[patient_id]

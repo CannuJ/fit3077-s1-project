@@ -5,7 +5,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 def total_cholesterol_graph(window, practitioner):
     #Get the corresponding data ready
-    patient_list = practitioner.get_patient_list()
+    patient_list = practitioner.get_current_page_patient_list()
     name_list = []
     cholesterol_list = []
 

@@ -158,7 +158,7 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
         empty_label.destroy()
 
     patient_lb = tk.Listbox(selection_button_frame)
-    for patient_id in practitioner.get_patient_list():
+    for patient_id in practitioner.get_current_page_patient_list():
         patient_name = practitioner.get_patient(patient_id).get_fullname()
         if practitioner.get_patient(patient_id).has_cholesterol():
             cholesterol = practitioner.get_patient(patient_id).cholesterol_latest()[1]
@@ -187,7 +187,7 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
     # TODO: Mark above average cholesterol as red
     cholesterol_average = practitioner.cholesterol_average()
     i = 0
-    for patient_id in practitioner.get_patient_list():
+    for patient_id in practitioner.get_current_page_patient_list():
         if practitioner.get_patient(patient_id).cholesterol_latest():
             if float(practitioner.get_patient(patient_id).cholesterol_latest()[1]) > cholesterol_average:
                 patient_lb.itemconfigure(i, {'fg': 'red'})
@@ -195,26 +195,23 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
                 patient_lb.itemconfigure(i, {'fg': 'black'})
         i += 1
 
-    # # TODO: Mark above average blood as purple
-    # blood_average = practitioner.blood_average()
-    # i = 0
-    # for patient_id in practitioner.get_patient_list():
-    #     if practitioner.get_patient(patient_id).blood_latest():
-    #         if float(practitioner.get_patient(patient_id).blood_latest()[0][1]) > blood_average[0]:
-    #             patient_lb.itemconfigure(i, {'fg': 'purple'})
-    #         else:
-    #             patient_lb.itemconfigure(i, {'fg': 'black'})
-    #
-    #         if float(practitioner.get_patient(patient_id).blood_latest()[1][1]) > blood_average[1]:
-    #             patient_lb.itemconfigure(i, {'fg': 'purple'})
-    #         else:
-    #             patient_lb.itemconfigure(i, {'fg': 'black'})
-    #
-    #     i += 1
+
 
     patient_lb.config(width=0, height=0)
     patient_lb.grid(row=4,column=0,sticky='n')
 
+    next_page_button = tk.Button(selection_button_frame, text='Next page', width=8, height=2, command=lambda : [
+            next_page_refresh(info_window, practitioner, systolic_lim, diastolic_lim)])
+
+    prev_page_button = tk.Button(selection_button_frame, text="Prev page", width=8, height=2, command=lambda :[
+            previous_page_refresh(info_window, practitioner, systolic_lim, diastolic_lim)])
+
+    page_text = "Page: " + str(practitioner.get_current_page()) + "/" + str(practitioner.get_total_page())
+    page_label = tk.Label(selection_button_frame, text=page_text, width=20)
+
+    next_page_button.grid(row=5, column=0, sticky='w')
+    page_label.grid(row=5, column=0)
+    prev_page_button.grid(row=5, column=0, sticky='e')
 
     cholesterol_graph = total_cholesterol_graph(graph_frame,practitioner)
     cholesterol_graph.grid()
@@ -226,11 +223,11 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
     history_button = tk.Button(selection_button_frame, text='Show patient detail', width=15, height=2, command=lambda: [
             show_patient_cholesterol_history(history_text, practitioner, patient_lb.get(patient_lb.curselection())[0]),
             show_patient_detail(detail_text, practitioner, patient_lb.get(patient_lb.curselection())[0])])
-    history_button.grid(row=5,column=0,sticky='wn')
+    history_button.grid(row=6,column=0,sticky='wn')
 
     blood_pressure_button = tk.Button(selection_button_frame, text='Show blood pressure', width=15, height=2, command=lambda :[
             show_patient_bp(blood_pressure_text,practitioner,systolic_lim,diastolic_lim,patient_lb.get(patient_lb.curselection())[0])])
-    blood_pressure_button.grid(row=5,column=0,sticky='n')
+    blood_pressure_button.grid(row=6,column=0,sticky='n')
 
     remove_button_pressed = tk.IntVar()
 
@@ -238,7 +235,7 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
                     command=lambda: [remove_patient_refresh(info_window, practitioner, patient_lb.get(patient_lb.curselection())[0],systolic_lim,diastolic_lim)])
 
 
-    remove_patient_button.grid(row=5,column=0,sticky='en')
+    remove_patient_button.grid(row=6,column=0,sticky='en')
 
     history_text.grid(row=0, column=0,sticky='n')
     detail_text.grid(row=0, column=1,sticky='n')
@@ -382,6 +379,13 @@ def show_patient_cholesterol_history(history_text, practitioner, patient_id):
             history_text.tag_add('latest', start_index, end_index)
             history_text.tag_configure('latest', foreground='red')
 
+def next_page_refresh(window, practitioner, sys_lim, dia_lim):
+    practitioner.next_page()
+    create_info_window(window, practitioner, sys_lim, dia_lim)
+
+def previous_page_refresh(window, practitioner, sys_lim, dia_lim):
+    practitioner.previous_page()
+    create_info_window(window, practitioner, sys_lim, dia_lim)
 
 def add_bp_monitor_patient(bp_label,sys_lim,patient_id, practitioner, bp_monitor):
     patient = practitioner.get_patient(patient_id)
