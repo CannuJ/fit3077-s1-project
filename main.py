@@ -245,7 +245,7 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
     bp_unavailable_text = "This patient has healthy blood pressure," + "\n" + "blood pressure history unavailable"
     bp_unavailable_label = tk.Label(bp_monitor_frame, text=bp_unavailable_text)
     bp_monitor = Bp_monitor_window(practitioner)
-    bp_monitor_button = tk.Button(bp_monitor_frame, text="Add to Blood pressure monitor", width=35, height=2, bg="blue",
+    bp_monitor_button = tk.Button(bp_monitor_frame, text="Add to Blood pressure monitor", width=35, height=2, bg="blue", fg='yellow',
                                   command=lambda: [add_bp_monitor_patient(bp_unavailable_label, systolic_lim, patient_lb.get(patient_lb.curselection())[0], practitioner, bp_monitor)])
     bp_monitor_button.grid(sticky='n')
 
