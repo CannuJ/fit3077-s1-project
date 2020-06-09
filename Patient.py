@@ -16,14 +16,11 @@ class Patient:
 
         if self.valid_id():
             self.valid = True
-
-            self.get_personal_details()  # TODO: Potential to run Asynchronously
-
+            # self.get_personal_details()  # TODO: Potential to run Asynchronously
             self.cholesterol_array = []
-            self.get_cholesterol()  # TODO: Potential to run Asynchronously
-
+            # self.get_cholesterol()  # TODO: Potential to run Asynchronously
             self.blood_array = {"Diastolic Blood Pressure": [], "Systolic Blood Pressure": []}
-            self.get_blood()  # TODO: Potential to run Asynchronously
+            # self.get_blood()  # TODO: Potential to run Asynchronously
 
     # URLs and Handling
 
@@ -46,8 +43,13 @@ class Patient:
         except KeyError:  # If either of these is not "error" and "processing" ASSUME is valid_id
             return True
 
-    # Personal Details
+    # Valid Patient Init
+    def get_preload(self):
+        self.get_personal_details()
+        self.get_cholesterol()
+        self.get_blood()
 
+    # Personal Details
     def get_personal_details(self):
         patient_data = requests.get(url=self.url_base()).json()
 

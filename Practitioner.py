@@ -149,6 +149,7 @@ class Practitioner:
         for patient_id in self.patient_base_id_array:
 
             self.patient_data[patient_id] = Patient(patient_id)
+            self.patient_data[patient_id].get_preload()
             self.patient_parsed_id_array.append(patient_id)
 
             if not self.patient_data[patient_id].has_cholesterol() and not self.patient_data[patient_id].has_blood():
@@ -157,7 +158,7 @@ class Practitioner:
 
             self.patient_monitor_id_array.append(patient_id)
             print("Patient ID: " + str(patient_id) + " processed from Practitioner Encounters (WITH DATA)")
-        self.total_page = math.ceil(int(len(self.patient_monitor_id_array))/5)
+        self.total_page = math.ceil(int(len(self.patient_monitor_id_array)) / 5)
 
     def add_patient(self, patient_id):
         patient_id = str(patient_id)  # Testing through code assumes ID is int
@@ -181,6 +182,7 @@ class Practitioner:
             return
 
         self.patient_parsed_id_array.append(patient_id)
+        self.patient_data[patient_id].get_preload()
 
         if not self.patient_data[patient_id].has_cholesterol() and not self.patient_data[patient_id].has_blood():
             print("Patient ID: " + str(patient_id) + " ADDED by Practitioner Request (NO DATA)")
@@ -201,12 +203,12 @@ class Practitioner:
         if patient_id in self.patient_bp_monitor_id_array:
             self.remove_bp_monitor_patient(patient_id)
 
-    def add_bp_monitor_patient(self,patient_id):
+    def add_bp_monitor_patient(self, patient_id):
         patient_id = str(patient_id)
         if patient_id not in self.patient_bp_monitor_id_array:
             self.patient_bp_monitor_id_array.append(patient_id)
 
-    def remove_bp_monitor_patient(self,patient_id):
+    def remove_bp_monitor_patient(self, patient_id):
         patient_id = str(patient_id)
         self.patient_bp_monitor_id_array.remove(patient_id)
 
@@ -215,7 +217,7 @@ class Practitioner:
 
     def get_current_page_patient_list(self):
         page = self.current_page
-        start_index = (page-1)*5
+        start_index = (page - 1) * 5
 
         if self.current_page == self.total_page:
             end_index = int(len(self.patient_monitor_id_array))
@@ -243,7 +245,6 @@ class Practitioner:
 
     def get_current_page(self):
         return self.current_page
-
 
     def get_patient(self, patient_id):
         return self.patient_data[patient_id]
@@ -275,7 +276,7 @@ class Practitioner:
             else:
                 total += float(value)
         if valid_len > 0:
-            average = total/valid_len
+            average = total / valid_len
         else:
             average = 0
         return average
@@ -306,7 +307,7 @@ class Practitioner:
             else:
                 systolic_total += float(value)
 
-        return [diastolic_total/diastolic_len, systolic_total/systolic_len]
+        return [diastolic_total / diastolic_len, systolic_total / systolic_len]
 
 
 def get_next_url(response):
@@ -348,6 +349,3 @@ if __name__ == '__main__':
     testPractitioner.add_patient(29163)  # Duplicate
 
     testPractitioner.display_patients()
-
-
-
