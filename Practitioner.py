@@ -7,7 +7,7 @@ npi_url = "http://hl7.org/fhir/sid/us-npi"
 
 
 class Practitioner:
-    def __init__(self, login):
+    def __init__(self, login, systolic, diastolic):
 
         self.login_type = None
         self.login = str(login)
@@ -21,6 +21,9 @@ class Practitioner:
 
         self.practitioner_id = None
         self.npi_id = None
+
+        self.sys_limit = systolic
+        self.dia_limit = diastolic
 
         self.patient_base_id_array = []
         self.patient_parsed_id_array = []

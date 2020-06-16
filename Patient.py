@@ -87,7 +87,6 @@ class Patient:
 
     # Cholesterol and Blood
     def get_cholesterol(self):
-
         next_url = self.url_cholesterol()
         while next_url is not False:
             cholesterol_data = requests.get(url=next_url).json()
@@ -116,7 +115,6 @@ class Patient:
         return True
 
     def get_blood(self):
-
         next_url = self.url_blood()
         while next_url is not False:
             blood_data = requests.get(url=next_url).json()

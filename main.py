@@ -45,7 +45,7 @@ def login_callback(window, entry,systolic_bp_entry, diastolic_bp_entry):
         except:
             diastolic_lim = 80
 
-    practitioner = Practitioner(entry.get())
+    practitioner = Practitioner(entry.get(), systolic_lim, diastolic_lim)
     if not practitioner.is_logged_in():
         failed_login(window)
     else:
@@ -190,12 +190,21 @@ def create_info_window(window, practitioner,systolic_lim,diastolic_lim):
     for patient_id in practitioner.get_current_page_patient_list():
         if practitioner.get_patient(patient_id).cholesterol_latest():
             if float(practitioner.get_patient(patient_id).cholesterol_latest()[1]) > cholesterol_average:
-                patient_lb.itemconfigure(i, {'fg': 'red'})
+                if practitioner.get_patient(patient_id).blood_latest():
+                    if float(practitioner.get_patient(patient_id).blood_latest()[0][1]) > practitioner.dia_limit:
+                        patient_lb.itemconfigure(i, {'fg': 'purple'})
+                    elif float(practitioner.get_patient(patient_id).blood_latest()[1][1]) > practitioner.sys_limit:
+                        patient_lb.itemconfigure(i, {'fg': 'purple'})
+                    else:
+                        patient_lb.itemconfigure(i, {'fg': 'red'})
             else:
-                patient_lb.itemconfigure(i, {'fg': 'black'})
+                if float(practitioner.get_patient(patient_id).blood_latest()[0][1]) > practitioner.dia_limit:
+                    patient_lb.itemconfigure(i, {'fg': 'blue'})
+                elif float(practitioner.get_patient(patient_id).blood_latest()[1][1]) > practitioner.sys_limit:
+                    patient_lb.itemconfigure(i, {'fg': 'blue'})
+                else:
+                    patient_lb.itemconfigure(i, {'fg': 'black'})
         i += 1
-
-
 
     patient_lb.config(width=0, height=0)
     patient_lb.grid(row=4,column=0,sticky='n')
