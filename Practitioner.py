@@ -192,6 +192,7 @@ class Practitioner:
             return
 
         self.patient_monitor_id_array.append(patient_id)
+        self.total_page = math.ceil(int(len(self.patient_monitor_id_array)) / 5)
         print("Patient ID: " + str(patient_id) + " ADDED by Practitioner Request (WITH DATA)")
 
     def remove_patient(self, patient_id):
@@ -201,6 +202,7 @@ class Practitioner:
             return
 
         self.patient_monitor_id_array.remove(patient_id)
+        self.total_page = math.ceil(int(len(self.patient_monitor_id_array)) / 5)
         print("Patient ID: " + str(patient_id) + " REMOVED by Practitioner Request")
 
         if patient_id in self.patient_bp_monitor_id_array:
