@@ -3,7 +3,14 @@ from pandas import DataFrame
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-def total_cholesterol_graph(window, practitioner):
+def total_cholesterol_graph(master, practitioner):
+    """
+
+    :param master: the master where the graph is outputted on
+    :param practitioner: the login practitioner
+    :return: graph tkiner component
+    """
+
     #Get the corresponding data ready
     patient_list = practitioner.get_current_page_patient_list()
     name_list = []
@@ -23,7 +30,7 @@ def total_cholesterol_graph(window, practitioner):
     #Construct graph
     figure = plt.Figure(figsize=(5,3), dpi=100)
     ax = figure.add_subplot(111)
-    bar = FigureCanvasTkAgg(figure, window)
+    bar = FigureCanvasTkAgg(figure, master)
     graph = bar.get_tk_widget()
 
     x = np.arange(len(name_list))  # the label locations
@@ -52,6 +59,14 @@ def total_cholesterol_graph(window, practitioner):
     return graph
 
 def blood_pressure_history_graph(root, practitioner, patient_id):
+    """
+
+    :param root: root where the graph is on
+    :param practitioner: the login practitioner
+    :param patient_id: the id of patient who's blood pressure history is being monitored
+    :return:
+    """
+
     bp_list = []
     date_list = []
 

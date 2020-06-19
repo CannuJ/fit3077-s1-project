@@ -5,6 +5,10 @@ from Graph import blood_pressure_history_graph
 
 class Bp_monitor_window:
     def __init__(self,practitioner):
+        """
+
+        :param practitioner: the loggin practitioner
+        """
         self.practitioner = practitioner
         self.monitoring_array = practitioner.patient_bp_monitor_id_array
 
