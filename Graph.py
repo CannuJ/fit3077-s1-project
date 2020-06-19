@@ -3,10 +3,10 @@ from pandas import DataFrame
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-def total_cholesterol_graph(master, practitioner):
+def total_cholesterol_graph(root, practitioner):
     """
 
-    :param master: the master where the graph is outputted on
+    :param root: the master where the graph is outputted on
     :param practitioner: the login practitioner
     :return: graph tkiner component
     """
@@ -30,7 +30,7 @@ def total_cholesterol_graph(master, practitioner):
     #Construct graph
     figure = plt.Figure(figsize=(5,3), dpi=100)
     ax = figure.add_subplot(111)
-    bar = FigureCanvasTkAgg(figure, master)
+    bar = FigureCanvasTkAgg(figure, root)
     graph = bar.get_tk_widget()
 
     x = np.arange(len(name_list))  # the label locations
